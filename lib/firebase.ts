@@ -1,5 +1,13 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut as firebaseSignOut,
+  User
+} from "firebase/auth";
+import { useState, useEffect } from 'react';
 
 const clientConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "demo-key",
@@ -20,6 +28,23 @@ export async function signUp(email: string, password: string) {
 
 export async function signOut() {
   return firebaseSignOut(auth);
+}
+
+// Create a properly typed useAuth hook
+export function useAuth() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  return { user, loading };
 }
 
 export { onAuthStateChanged };
