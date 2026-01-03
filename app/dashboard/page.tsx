@@ -89,9 +89,6 @@ export default function Dashboard() {
 
         {/* Stats Grid */}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Active Applications</p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">24</p>
