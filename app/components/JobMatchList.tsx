@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { FiBriefcase, FiMapPin, FiDollarSign, FiExternalLink } from 'react-icons/fi';
+import { FiBriefcase, FiMapPin, FiDollarSign, FiExternalLink, FiMail } from 'react-icons/fi';
 import { trackApplication } from '@/lib/applications';
+import { generateCoverLetter } from '@/lib/email-service';
 import { useAuth } from '@/lib/firebase';
 
 interface Job {
@@ -20,7 +21,8 @@ interface Job {
 export default function JobMatchList() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
-  const [applied, setApplied] = useState<Set<string>>(new Set());
+  const [sending, setSending] = useState<Set<string>>(new Set());
+  const [coverLetters, setCoverLetters] = useState<Record<string, string>>({});
   const { user } = useAuth();
 
   const searchJobs = async () => {
@@ -44,11 +46,13 @@ export default function JobMatchList() {
     setLoading(false);
   };
 
-  const handleApply = async (job: Job) => {
+  const handleSmartApply = async (job: Job) => {
     if (!user || !job.applyLink) return;
 
     try {
-      // Track application in Firebase
+      setSending(prev => new Set(prev).add(job.id));
+
+      // 1. Track application in Firebase
       await trackApplication(user.uid, {
         jobId: job.id,
         jobTitle: job.title,
@@ -59,15 +63,35 @@ export default function JobMatchList() {
         remote: job.remote,
       });
 
-      // Mark as applied in UI
-      setApplied(prev => new Set(prev).add(job.id));
+      // 2. Generate AI cover letter
+      // TODO: In production, fetch actual resume text from Firebase Storage
+      const resumeText = "Senior Frontend Engineer with 5 years React/TypeScript experience building scalable web applications and leading development teams.";
+      const coverLetter = await generateCoverLetter(
+        job.title,
+        job.company,
+        job.description,
+        resumeText
+      );
 
-      // Open application link in new tab
+      // 3. Store cover letter and log it (email sending disabled for now)
+      setCoverLetters(prev => ({ ...prev, [job.id]: coverLetter }));
+      console.log('=== AI-GENERATED COVER LETTER ===');
+      console.log(`For: ${job.title} at ${job.company}`);
+      console.log(coverLetter);
+      console.log('==================================');
+
+      // 4. Open application link in new tab
       window.open(job.applyLink, '_blank');
 
     } catch (error) {
-      console.error('Failed to track application:', error);
-      alert('Error tracking application. Please try again.');
+      console.error('Application failed:', error);
+      alert('Error sending application. Please try again.');
+    } finally {
+      setSending(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(job.id);
+        return newSet;
+      });
     }
   };
 
@@ -90,9 +114,10 @@ export default function JobMatchList() {
       {jobs.length > 0 ? (
         <div className="space-y-4 max-h-96 overflow-y-auto">
           {jobs.map((job) => {
-            const isApplied = applied.has(job.id);
+            const isSending = sending.has(job.id);
+            const hasCoverLetter = coverLetters[job.id];
             return (
-              <div key={job.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+              <div key={job.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50" id={`job-${job.id}`}>
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h4 className="font-semibold text-gray-900">{job.title}</h4>
@@ -115,24 +140,41 @@ export default function JobMatchList() {
                 
                 <p className="text-sm text-gray-600 mb-3">{job.description}</p>
                 
+                {hasCoverLetter && (
+                  <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-xs font-medium text-gray-900">AI Cover Letter (check console for full text)</p>
+                    <p className="text-xs text-gray-600 mt-1">{coverLetters[job.id].substring(0, 150)}...</p>
+                  </div>
+                )}
+                
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-400">{job.posted}</span>
                   <div className="space-x-2">
                     {job.applyLink ? (
                       <>
                         <button 
-                          onClick={() => handleApply(job)}
-                          disabled={isApplied}
+                          onClick={() => handleSmartApply(job)}
+                          disabled={isSending}
                           className={`px-3 py-1 rounded text-sm flex items-center ${
-                            isApplied 
+                            isSending 
                               ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                               : 'bg-blue-600 text-white hover:bg-blue-700'
                           }`}
                         >
-                          {isApplied ? '✓ Applied' : (
+                          {isSending ? (
+                            <>
+                              <FiMail className="w-3 h-3 mr-1" />
+                              Sending...
+                            </>
+                          ) : hasCoverLetter ? (
                             <>
                               <FiExternalLink className="w-3 h-3 mr-1" />
-                              Apply
+                              View Application
+                            </>
+                          ) : (
+                            <>
+                              <FiExternalLink className="w-3 h-3 mr-1" />
+                              Smart Apply
                             </>
                           )}
                         </button>
