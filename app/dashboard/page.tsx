@@ -158,6 +158,11 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Job Matches Section */}
+        <div className="mb-8">
+          <JobMatchList />
+        </div>
+
         {/* Agent Control Panel */}
         <div className="bg-white border border-gray-200 rounded-xl mb-8">
           <div 
