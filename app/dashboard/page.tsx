@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/firebase';
-import { FiSearch, FiCalendar, FiUser, FiMapPin, FiExternalLink } from 'react-icons/fi';
+import { FiSearch, FiCalendar, FiUser, FiMapPin, FiExternalLink, FiBriefcase } from 'react-icons/fi';
 import { getUserApplications, type Application } from '@/lib/applications';
 import JobMatchList from '@/components/JobMatchList';
 
