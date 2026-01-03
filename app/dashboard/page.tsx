@@ -6,16 +6,7 @@ import { FiSearch, FiCalendar, FiUser, FiMapPin, FiExternalLink } from 'react-ic
 import { getUserApplications, type Application } from '@/lib/applications';
 import JobMatchList from '@/components/JobMatchList';
 
-// Define the Application interface if not already in applications.ts
-interface Application {
-  id: string;
-  jobTitle: string;
-  company: string;
-  location?: string;
-  status: 'pending' | 'reviewing' | 'interview' | 'rejected' | 'accepted';
-  appliedDate: string;
-  applyLink?: string;
-}
+// ✅ REMOVED: Local Application interface (it's already imported from applications.ts)
 
 export default function DashboardPage(): JSX.Element {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -132,9 +123,10 @@ export default function DashboardPage(): JSX.Element {
                     )}
                   </div>
                   <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                    app.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                    app.status === 'offer' ? 'bg-green-100 text-green-800' :
                     app.status === 'interview' ? 'bg-purple-100 text-purple-800' :
                     app.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                    app.status === 'screening' ? 'bg-blue-100 text-blue-800' :
                     'bg-yellow-100 text-yellow-800'
                   }`}>
                     {app.status}
@@ -142,7 +134,7 @@ export default function DashboardPage(): JSX.Element {
                 </div>
 
                 <div className="flex justify-between items-center text-xs text-gray-400">
-                  <span>Applied: {new Date(app.appliedDate).toLocaleDateString()}</span>
+                  <span>Applied: {new Date().toLocaleDateString()}</span>
                   {app.applyLink && (
                     <a 
                       href={app.applyLink}
