@@ -3,6 +3,7 @@
 import { useAuth } from '@/lib/firebase';
 import {
   FiSearch,
+import { getUserApplications, type Application } from '@/lib/applications';
   FiBriefcase,
   FiCalendar,
   FiUser,
@@ -30,6 +31,13 @@ import ResumeUploader from '@/components/ResumeUploader';
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
+  const [applications, setApplications] = useState<Application[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      getUserApplications(user.uid).then(setApplications);
+    }
+  }, [user]);
   const [expandedSections, setExpandedSections] = useState({
     agent: true,
     applications: true,
@@ -254,62 +262,32 @@ export default function Dashboard() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    <tr className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                            <span className="text-xs font-medium text-gray-600">G</span>
-                          </div>
-                          <span className="ml-3 text-sm font-medium text-gray-900">Google</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Senior Frontend Engineer</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Interview</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2 days ago</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900">View</button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                            <span className="text-xs font-medium text-gray-600">A</span>
-                          </div>
-                          <span className="ml-3 text-sm font-medium text-gray-900">Amazon</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Frontend Developer II</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">Screening</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1 week ago</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900">View</button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                            <span className="text-xs font-medium text-gray-600">M</span>
-                          </div>
-                          <span className="ml-3 text-sm font-medium text-gray-900">Microsoft</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">React Developer</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Applied</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3 days ago</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900">View</button>
-                      </td>
-                    </tr>
-                  </tbody>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {applications.map((app) => (
+            <tr key={app.id} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                    <span className="text-xs font-medium text-gray-600">{app.company[0]}</span>
+                  </div>
+                  <span className="ml-3 text-sm font-medium text-gray-900">{app.company}</span>
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{app.jobTitle}</td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={}>
+                  {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {app.appliedAt?.toLocaleDateString()}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <a href={app.applyLink} target="_blank" className="text-blue-600 hover:text-blue-900">View</a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
                 </table>
               </div>
               <div className="mt-6 flex justify-center">
