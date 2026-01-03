@@ -3,7 +3,6 @@
 import { useAuth } from '@/lib/firebase';
 import {
   FiSearch,
-import JobMatchList from '@/components/JobMatchList';
   FiBriefcase,
   FiCalendar,
   FiUser,
@@ -26,7 +25,8 @@ import JobMatchList from '@/components/JobMatchList';
   FiChevronDown
 } from 'react-icons/fi';
 import { useState } from 'react';
-import ResumeUploader from '../components/ResumeUploader';
+import JobMatchList from '@/components/JobMatchList';
+import ResumeUploader from '@/components/ResumeUploader';
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -88,7 +88,9 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Grid */}
-
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Active Applications</p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">24</p>
@@ -332,9 +334,7 @@ export default function Dashboard() {
           {expandedSections.insights && (
             <div className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* RESUME UPLOADER REPLACES THE OLD APPLICATION PERFORMANCE SECTION */}
                 <ResumeUploader />
-                
                 <div>
                   <h4 className="text-md font-medium text-gray-900 mb-4">Recommendations</h4>
                   <div className="space-y-3">
