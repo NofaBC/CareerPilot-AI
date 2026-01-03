@@ -38,6 +38,9 @@ export default function Dashboard() {
       getUserApplications(user.uid).then(setApplications);
     }
   }, [user]);
+      getUserApplications(user.uid).then(setApplications);
+    }
+  }, [user]);
   const [expandedSections, setExpandedSections] = useState({
     agent: true,
     applications: true,
