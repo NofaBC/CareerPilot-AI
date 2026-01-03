@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FiBriefcase, FiMapPin, FiDollarSign, FiExternalLink, FiMail } from 'react-icons/fi';
+import { FiBriefcase, FiMapPin, FiDollarSign, FiExternalLink, FiMail, FiEye } from 'react-icons/fi';
 import { trackApplication } from '@/lib/applications';
 import { generateCoverLetter } from '@/lib/email-service';
 import { useAuth } from '@/lib/firebase';
@@ -22,6 +22,7 @@ export default function JobMatchList() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState<Set<string>>(new Set());
+  const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [coverLetters, setCoverLetters] = useState<Record<string, string>>({});
   const { user } = useAuth();
 
@@ -37,13 +38,17 @@ export default function JobMatchList() {
           remote: true,
         }),
       });
-      
+
       const data = await response.json();
       setJobs(data.jobs || []);
     } catch (error) {
       console.error('Failed to search jobs:', error);
     }
     setLoading(false);
+  };
+
+  const toggleDetails = (jobId: string) => {
+    setExpandedJob(expandedJob === jobId ? null : jobId);
   };
 
   const handleSmartApply = async (job: Job) => {
@@ -61,10 +66,10 @@ export default function JobMatchList() {
         applyLink: job.applyLink,
         salary: job.salary,
         remote: job.remote,
+        status: 'pending', // ✅ ADDED: Required field for new applications
       });
 
       // 2. Generate AI cover letter
-      // TODO: In production, fetch actual resume text from Firebase Storage
       const resumeText = "Senior Frontend Engineer with 5 years React/TypeScript experience building scalable web applications and leading development teams.";
       const coverLetter = await generateCoverLetter(
         job.title,
@@ -73,7 +78,7 @@ export default function JobMatchList() {
         resumeText
       );
 
-      // 3. Store cover letter and log it (email sending disabled for now)
+      // 3. Store and log cover letter (email sending disabled for now)
       setCoverLetters(prev => ({ ...prev, [job.id]: coverLetter }));
       console.log('=== AI-GENERATED COVER LETTER ===');
       console.log(`For: ${job.title} at ${job.company}`);
@@ -115,9 +120,11 @@ export default function JobMatchList() {
         <div className="space-y-4 max-h-96 overflow-y-auto">
           {jobs.map((job) => {
             const isSending = sending.has(job.id);
+            const isExpanded = expandedJob === job.id;
             const hasCoverLetter = coverLetters[job.id];
+            
             return (
-              <div key={job.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50" id={`job-${job.id}`}>
+              <div key={job.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h4 className="font-semibold text-gray-900">{job.title}</h4>
@@ -138,12 +145,14 @@ export default function JobMatchList() {
                   )}
                 </div>
                 
-                <p className="text-sm text-gray-600 mb-3">{job.description}</p>
+                <p className={`text-sm text-gray-600 mb-3 ${isExpanded ? '' : 'line-clamp-2'}`}>
+                  {job.description}
+                </p>
                 
-                {hasCoverLetter && (
+                {isExpanded && hasCoverLetter && (
                   <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-xs font-medium text-gray-900">AI Cover Letter (check console for full text)</p>
-                    <p className="text-xs text-gray-600 mt-1">{coverLetters[job.id].substring(0, 150)}...</p>
+                    <p className="text-xs font-medium text-gray-900">AI-Generated Cover Letter:</p>
+                    <p className="text-xs text-gray-600 mt-1">{coverLetters[job.id]}</p>
                   </div>
                 )}
                 
@@ -153,27 +162,26 @@ export default function JobMatchList() {
                     {job.applyLink ? (
                       <>
                         <button 
+                          onClick={() => toggleDetails(job.id)}
+                          className="text-blue-600 text-sm hover:text-blue-800 flex items-center"
+                        >
+                          <FiEye className="w-3 h-3 mr-1" />
+                          {isExpanded ? 'Hide' : 'View Details'}
+                        </button>
+                        
+                        <button 
                           onClick={() => handleSmartApply(job)}
                           disabled={isSending}
-                          className={`px-3 py-1 rounded text-sm flex items-center ${
-                            isSending 
-                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                              : 'bg-blue-600 text-white hover:bg-blue-700'
-                          }`}
+                          className={`px-3 py-1 rounded text-sm flex items-center ${isSending ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white disabled:cursor-not-allowed disabled:bg-gray-400`}
                         >
                           {isSending ? (
                             <>
-                              <FiMail className="w-3 h-3 mr-1" />
+                              <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
                               Sending...
-                            </>
-                          ) : hasCoverLetter ? (
-                            <>
-                              <FiExternalLink className="w-3 h-3 mr-1" />
-                              View Application
                             </>
                           ) : (
                             <>
-                              <FiExternalLink className="w-3 h-3 mr-1" />
+                              <FiMail className="w-3 h-3 mr-1" />
                               Smart Apply
                             </>
                           )}
