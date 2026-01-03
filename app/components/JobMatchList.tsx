@@ -66,7 +66,7 @@ export default function JobMatchList() {
         applyLink: job.applyLink,
         salary: job.salary,
         remote: job.remote,
-        status: 'pending', // ✅ ADDED: Required field for new applications
+        status: 'applied', // ✅ FIXED: Must be one of the valid ApplicationStatus values
       });
 
       // 2. Generate AI cover letter
