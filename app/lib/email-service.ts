@@ -1,30 +1,44 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
+// Initialize OpenAI client only if API key exists
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
 export async function generateCoverLetter(
   jobTitle: string,
   company: string,
   jobDescription: string,
   resumeText: string
-) {
-  const prompt = `You are a professional job applicant with this resume:
-${resumeText}
+): Promise<string> {
+  // Check if OpenAI is configured
+  if (!openai) {
+    console.warn('OpenAI not configured - returning placeholder cover letter');
+    return `Dear Hiring Manager,\n\nI am writing to express my interest in the ${jobTitle} position at ${company}.\n\nBest regards,\nApplicant`;
+  }
 
-Write a personalized cover letter for this position:
-Job: ${jobTitle}
-Company: ${company}
-Description: ${jobDescription.substring(0, 1000)}
+  try {
+    const prompt = `
+You are a professional career coach. Write a compelling cover letter for the following job:
 
-Keep it concise (150-200 words), professional, and highlight relevant skills.`;
+Job: ${jobTitle} at ${company}
+Description: ${jobDescription}
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    max_tokens: 300,
-  });
+Applicant's experience: ${resumeText}
 
-  return response.choices[0].message.content || '';
+Write a concise, professional cover letter (200-300 words) that highlights relevant skills and demonstrates enthusiasm for the role.
+`;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4-turbo',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 400,
+    });
+
+    return response.choices[0]?.message?.content || 'Failed to generate cover letter';
+  } catch (error) {
+    console.error('OpenAI error:', error);
+    // Fallback to placeholder if API fails
+    return `Dear Hiring Manager,\n\nI am writing to express my interest in the ${jobTitle} position at ${company}.\n\nBest regards,\nApplicant`;
+  }
 }
