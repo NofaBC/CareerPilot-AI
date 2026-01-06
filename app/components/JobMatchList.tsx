@@ -14,7 +14,7 @@ interface Job {
   company: string;
   location: string;
   description: string;
-  applyLink?: string; // Keep optional but handle in validation
+  applyLink?: string;
   posted?: string;
   salary?: string;
   remote?: boolean;
@@ -64,7 +64,7 @@ export default function JobMatchList() {
       });
 
       const data = await response.json();
-      console.log('Job search results:', data.jobs); // Debug log
+      console.log('Job search results:', data.jobs);
       setJobs(data.jobs || []);
     } catch (error) {
       console.error('Failed to search jobs:', error);
@@ -90,21 +90,14 @@ export default function JobMatchList() {
     
     // Check if popup was blocked
     if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-      alert('⚠️ Pop-up blocked by browser!\n\nPlease allow pop-ups for this site or click the link manually.');
-      // Fallback: Show the link to user
-      if (confirm(`Open this link manually?\n\n${job.applyLink}`)) {
-        window.location.href = job.applyLink;
-      }
+      alert('⚠️ Pop-up blocked by browser!\n\nPlease allow pop-ups for career-pilot-ai.vercel.app or click "View Details" and apply manually.');
       return;
     }
 
-    // 3. Show immediate success feedback
-    alert(`✅ Application sent to ${job.company}!\n\nA cover letter is being generated in the background.`);
-
-    // 4. Set loading state
+    // 3. Set loading state
     setSending(prev => new Set(prev).add(job.id));
 
-    // 5. Run async operations in background (don't block user)
+    // 4. Run async operations in background (don't block user)
     (async () => {
       try {
         // Track application in Firebase
@@ -114,8 +107,7 @@ export default function JobMatchList() {
             jobTitle: job.title,
             company: job.company,
             location: job.location,
-            // FIX: Use non-null assertion since we validated applyLink exists
-            applyLink: job.applyLink!,
+            applyLink: job.applyLink!, // Non-null assertion since we validated above
             salary: job.salary,
             remote: job.remote,
             status: 'applied',
@@ -137,7 +129,6 @@ export default function JobMatchList() {
         }
       } catch (error) {
         console.error('❌ Background operations failed:', error);
-        // Don't alert user - link already opened successfully
       } finally {
         setSending(prev => {
           const newSet = new Set(prev);
