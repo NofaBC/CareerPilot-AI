@@ -76,25 +76,25 @@ export default function JobMatchList() {
   };
 
   const handleSmartApply = (job: Job) => {
-    // CRITICAL: Only synchronous validation before window.open()
+    // Synchronous validation only
     if (!job.applyLink) {
-      alert('No application link available for this job');
+      alert('No application link available');
       return;
     }
 
-    // ABSOLUTELY NOTHING ELSE HERE - Open window IMMEDIATELY
+    // Open immediately - ZERO code before this
     const newWindow = window.open(job.applyLink, '_blank', 'noopener,noreferrer');
     
     // Check if blocked
     if (!newWindow || newWindow.closed) {
-      alert('⚠️ Pop-up blocked! Please allow pop-ups for this site.');
+      alert('⚠️ Pop-up blocked! Click "View Details" to see the job link.');
       return;
     }
 
-    // NOW we can update state - after window is open
+    // NOW update state
     setSending(prev => new Set(prev).add(job.id));
 
-    // Fire-and-forget async operations
+    // Background operations
     (async () => {
       try {
         if (user) {
