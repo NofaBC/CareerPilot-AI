@@ -53,15 +53,10 @@ export default function BuildProfilePage() {
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
-
-  
-
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center">
           <FiUser className="w-10 h-10 mr-3 text-blue-600" />
@@ -90,4 +85,108 @@ export default function BuildProfilePage() {
             placeholder="Full Stack Developer with 5 years experience in React, Node.js, and TypeScript..."
             required
           />
-         
+          <p className="text-sm text-gray-500">
+            Our AI will extract your skills and experience to find the best matches.
+          </p>
+        </div>
+
+        {/* Job Preferences Section */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold text-gray-800 flex items-center">
+            <FiTarget className="w-6 h-6 mr-2 text-green-600" />
+            What You're Looking For
+          </h2>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Target Job Title<span className="text-red-500 ml-1">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.targetRole}
+                onChange={(e) => handleChange('targetRole', e.target.value)}
+                className="w-full p-4 border border-gray-300 rounded-lg"
+                placeholder="e.g. Senior Frontend Developer"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Preferred Location
+              </label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => handleChange('location', e.target.value)}
+                className="w-full p-4 border border-gray-300 rounded-lg"
+                placeholder="e.g. Remote, New York, San Francisco"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Salary Section */}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold text-gray-800 flex items-center">
+            <FiDollarSign className="w-6 h-6 mr-2 text-green-600" />
+            Salary Expectations
+          </h2>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Minimum Salary
+              </label>
+              <input
+                type="text"
+                value={formData.minSalary}
+                onChange={(e) => handleChange('minSalary', e.target.value)}
+                className="w-full p-4 border border-gray-300 rounded-lg"
+                placeholder="e.g. $80k"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Maximum Salary
+              </label>
+              <input
+                type="text"
+                value={formData.maxSalary}
+                onChange={(e) => handleChange('maxSalary', e.target.value)}
+                className="w-full p-4 border border-gray-300 rounded-lg"
+                placeholder="e.g. $120k"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <div className="pt-6 border-t border-gray-200">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Saving Profile...
+              </>
+            ) : (
+              <>
+                Generate My Profile
+                <FiSave className="w-5 h-5 ml-2" />
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
