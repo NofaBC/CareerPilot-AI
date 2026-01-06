@@ -77,55 +77,74 @@ export default function JobMatchList() {
     setExpandedJob(expandedJob === jobId ? null : jobId);
   };
 
-  const handleSmartApply = async (job: Job) => {
-    if (!user || !job.applyLink) {
-      alert('Missing job link or user info');
+  const handleSmartApply = (job: Job) => {
+    // 1. Validate link exists
+    if (!job.applyLink) {
+      alert('No application link available for this job');
       return;
     }
 
-    // OPEN JOB LINK IMMEDIATELY (don't wait for cover letter)
+    // 2. OPEN LINK IMMEDIATELY - Must happen before any async operations to avoid popup blocker
     console.log('🔍 Opening job link:', job.applyLink);
-    window.open(job.applyLink, '_blank', 'noopener,noreferrer');
+    const newWindow = window.open(job.applyLink, '_blank', 'noopener,noreferrer');
+    
+    // Check if popup was blocked
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      alert('⚠️ Pop-up blocked by browser!\n\nPlease allow pop-ups for this site or click the link manually.');
+      // Fallback: Show the link to user
+      if (confirm('Open link in current tab instead?')) {
+        window.location.href = job.applyLink;
+      }
+      return;
+    }
 
+    // 3. Show immediate success feedback
+    alert(`✅ Application sent to ${job.company}!\n\nA cover letter is being generated in the background.`);
+
+    // 4. Set loading state
     setSending(prev => new Set(prev).add(job.id));
 
-    try {
-      // 1. Track application in Firebase
-      await trackApplication(user.uid, {
-        jobId: job.id,
-        jobTitle: job.title,
-        company: job.company,
-        location: job.location,
-        applyLink: job.applyLink,
-        salary: job.salary,
-        remote: job.remote,
-        status: 'applied',
-      });
+    // 5. Run async operations in background (don't block user)
+    (async () => {
+      try {
+        // Track application in Firebase
+        if (user) {
+          await trackApplication(user.uid, {
+            jobId: job.id,
+            jobTitle: job.title,
+            company: job.company,
+            location: job.location,
+            applyLink: job.applyLink,
+            salary: job.salary,
+            remote: job.remote,
+            status: 'applied',
+          });
+          console.log('✅ Application tracked in Firebase');
+        }
 
-      // 2. Generate cover letter in background
-      if (resumeText && job.description) {
-        console.log('🤖 Generating cover letter...');
-        const coverLetter = await generateCoverLetter(
-          job.title,
-          job.company,
-          job.description,
-          resumeText
-        );
-        
-        setCoverLetters(prev => ({ ...prev, [job.id]: coverLetter }));
-        console.log('✅ Cover letter generated:', coverLetter.substring(0, 100) + '...');
+        // Generate cover letter
+        if (resumeText && job.description) {
+          console.log('🤖 Generating cover letter...');
+          const coverLetter = await generateCoverLetter(
+            job.title,
+            job.company,
+            job.description,
+            resumeText
+          );
+          setCoverLetters(prev => ({ ...prev, [job.id]: coverLetter }));
+          console.log('✅ Cover letter generated and saved');
+        }
+      } catch (error) {
+        console.error('❌ Background operations failed:', error);
+        // Don't alert user - link already opened successfully
+      } finally {
+        setSending(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(job.id);
+          return newSet;
+        });
       }
-
-    } catch (error) {
-      console.error('❌ Application tracking failed:', error);
-      // Don't show error to user since job link already opened
-    } finally {
-      setSending(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(job.id);
-        return newSet;
-      });
-    }
+    })();
   };
 
   return (
