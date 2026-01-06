@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiBriefcase, FiMapPin, FiDollarSign, FiExternalLink, FiMail, FiEye, FiZap } from 'react-icons/fi';
 import { trackApplication } from '@/lib/applications';
 import { generateCoverLetter } from '@/lib/email-service';
 import { useAuth } from '@/lib/auth-hooks';
+import { doc, getDoc } from 'firebase/firestore';
+import { firestore } from '@/lib/firebase';
 
 interface Job {
   id: string;
@@ -26,7 +28,26 @@ export default function JobMatchList() {
   const [sending, setSending] = useState<Set<string>>(new Set());
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [coverLetters, setCoverLetters] = useState<Record<string, string>>({});
+  const [resumeText, setResumeText] = useState<string>('');
   const { user } = useAuth();
+
+  // Load user's resume text for cover letter generation
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!user) return;
+      try {
+        const profileRef = doc(firestore, 'users', user.uid, 'profile', 'main');
+        const profileSnap = await getDoc(profileRef);
+        if (profileSnap.exists()) {
+          const data = profileSnap.data();
+          setResumeText(data.resume || '');
+        }
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+      }
+    };
+    loadProfile();
+  }, [user]);
 
   const searchJobs = async () => {
     if (!user) {
@@ -36,19 +57,18 @@ export default function JobMatchList() {
 
     setLoading(true);
     try {
-      // Add user ID to request so API can fetch profile
       const response = await fetch('/api/search-jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.uid, // ✅ Pass user ID so API can read profile
-        }),
+        body: JSON.stringify({ userId: user.uid }),
       });
 
       const data = await response.json();
+      console.log('Job search results:', data.jobs); // Debug log
       setJobs(data.jobs || []);
     } catch (error) {
       console.error('Failed to search jobs:', error);
+      alert('Error searching jobs. Please try again.');
     }
     setLoading(false);
   };
@@ -58,11 +78,18 @@ export default function JobMatchList() {
   };
 
   const handleSmartApply = async (job: Job) => {
-    if (!user || !job.applyLink) return;
+    if (!user || !job.applyLink) {
+      alert('Missing job link or user info');
+      return;
+    }
+
+    // OPEN JOB LINK IMMEDIATELY (don't wait for cover letter)
+    console.log('🔍 Opening job link:', job.applyLink);
+    window.open(job.applyLink, '_blank', 'noopener,noreferrer');
+
+    setSending(prev => new Set(prev).add(job.id));
 
     try {
-      setSending(prev => new Set(prev).add(job.id));
-
       // 1. Track application in Firebase
       await trackApplication(user.uid, {
         jobId: job.id,
@@ -75,28 +102,23 @@ export default function JobMatchList() {
         status: 'applied',
       });
 
-      // 2. Generate AI cover letter
-      const resumeText = "Senior Frontend Engineer with 5 years React/TypeScript experience building scalable web applications and leading development teams.";
-      const coverLetter = await generateCoverLetter(
-        job.title,
-        job.company,
-        job.description,
-        resumeText
-      );
-
-      // 3. Store and log cover letter (email sending disabled for now)
-      setCoverLetters(prev => ({ ...prev, [job.id]: coverLetter }));
-      console.log('=== AI-GENERATED COVER LETTER ===');
-      console.log(`For: ${job.title} at ${job.company}`);
-      console.log(coverLetter);
-      console.log('==================================');
-
-      // 4. Open application link in new tab
-      window.open(job.applyLink, '_blank');
+      // 2. Generate cover letter in background
+      if (resumeText && job.description) {
+        console.log('🤖 Generating cover letter...');
+        const coverLetter = await generateCoverLetter(
+          job.title,
+          job.company,
+          job.description,
+          resumeText
+        );
+        
+        setCoverLetters(prev => ({ ...prev, [job.id]: coverLetter }));
+        console.log('✅ Cover letter generated:', coverLetter.substring(0, 100) + '...');
+      }
 
     } catch (error) {
-      console.error('Application failed:', error);
-      alert('Error sending application. Please try again.');
+      console.error('❌ Application tracking failed:', error);
+      // Don't show error to user since job link already opened
     } finally {
       setSending(prev => {
         const newSet = new Set(prev);
