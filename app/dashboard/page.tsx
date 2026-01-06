@@ -1,18 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/firebase';
-import { FiSearch, FiCalendar, FiUser, FiMapPin, FiExternalLink, FiBriefcase } from 'react-icons/fi';
+import { firestore } from '@/lib/firebase';
+import { FiSearch, FiCalendar, FiUser, FiMapPin, FiExternalLink, FiBriefcase, FiSettings } from 'react-icons/fi';
 import { getUserApplications, type Application } from '@/lib/applications';
+import { useAuth } from '@/lib/auth-hooks';
 import JobMatchList from '@/components/JobMatchList';
-
-// ✅ REMOVED: Local Application interface (it's already imported from applications.ts)
+import Link from 'next/link';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function DashboardPage(): JSX.Element {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const [hasProfile, setHasProfile] = useState<boolean>(false);
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     let isMounted = true;
@@ -41,11 +43,21 @@ export default function DashboardPage(): JSX.Element {
       }
     };
 
-    loadApplications();
-
-    return () => {
-      isMounted = false;
+    // Check if user has profile
+    const checkProfile = async () => {
+      if (!user) return;
+      try {
+        const profileRef = doc(firestore, 'users', user.uid, 'profile', 'main');
+        const profileSnap = await getDoc(profileRef);
+        setHasProfile(profileSnap.exists());
+      } catch (error) {
+        console.warn('Could not check profile status');
+        setHasProfile(false);
+      }
     };
+
+    loadApplications();
+    checkProfile();
   }, [user]);
 
   if (loading) {
@@ -82,12 +94,31 @@ export default function DashboardPage(): JSX.Element {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-          <FiBriefcase className="w-8 h-8 mr-3 text-blue-600" />
-          CareerPilot Dashboard
-        </h1>
-        <p className="text-gray-600 mt-2">Manage your job search and applications</p>
+      <header className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+            <FiBriefcase className="w-8 h-8 mr-3 text-blue-600" />
+            CareerPilot Dashboard
+          </h1>
+          <p className="text-gray-600 mt-2">Manage your job search and applications</p>
+        </div>
+        
+        {/* Show different buttons based on profile status */}
+        {hasProfile ? (
+          <Link href="/build-profile">
+            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+              <FiSettings className="w-5 h-5 mr-2" />
+              Edit Profile
+            </button>
+          </Link>
+        ) : (
+          <Link href="/build-profile">
+            <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center">
+              <FiSettings className="w-5 h-5 mr-2" />
+              Build Profile
+            </button>
+          </Link>
+        )}
       </header>
 
       {/* AI Job Matches Section */}
@@ -95,14 +126,14 @@ export default function DashboardPage(): JSX.Element {
         <JobMatchList />
       </section>
 
-      {/* Applications Section */}
-      <section>
-        <div className="flex items-center mb-6">
-          <FiCalendar className="w-6 h-6 mr-2 text-gray-700" />
-          <h2 className="text-2xl font-semibold text-gray-800">Your Applications</h2>
-        </div>
+      {/* Applications Section - Hidden when empty */}
+      {applications.length > 0 && (
+        <section>
+          <div className="flex items-center mb-6">
+            <FiCalendar className="w-6 h-6 mr-2 text-gray-700" />
+            <h2 className="text-2xl font-semibold text-gray-800">Your Applications</h2>
+          </div>
 
-        {applications.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {applications.map((app) => (
               <div 
@@ -149,16 +180,8 @@ export default function DashboardPage(): JSX.Element {
               </div>
             ))}
           </div>
-        ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <FiCalendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No applications yet.</p>
-            <p className="text-sm text-gray-400 mt-1">
-              Use the AI Job Matches above to start applying!
-            </p>
-          </div>
-        )}
-      </section>
+        </section>
+      )}
     </div>
   );
 }

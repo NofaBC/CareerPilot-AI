@@ -1,14 +1,11 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { 
+import {
   getAuth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 
 const clientConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "demo-key",
@@ -21,28 +18,14 @@ const clientConfig = {
 
 const app = !getApps().length ? initializeApp(clientConfig) : getApp();
 
-// Export all Firebase services
+// Export Firebase services (safe for both server and client)
 export const auth = getAuth(app);
 export const firestore = getFirestore(app);
 export const storage = getStorage(app);
 
-// Auth functions
-export const signIn = (email: string, password: string) => 
+// Auth functions (safe for both)
+export const signIn = (email: string, password: string) =>
   signInWithEmailAndPassword(auth, email, password);
 
-export const signUp = (email: string, password: string) => 
+export const signUp = (email: string, password: string) =>
   createUserWithEmailAndPassword(auth, email, password);
-
-// Auth hook
-export function useAuth() {
-  const router = useRouter();
-  const [user, loading] = useAuthState(auth);
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-
-  return { user, loading, signOut: () => auth.signOut() };
-}

@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { FiBriefcase, FiMapPin, FiDollarSign, FiExternalLink, FiMail, FiEye } from 'react-icons/fi';
+import { FiBriefcase, FiMapPin, FiDollarSign, FiExternalLink, FiMail, FiEye, FiZap } from 'react-icons/fi';
 import { trackApplication } from '@/lib/applications';
 import { generateCoverLetter } from '@/lib/email-service';
-import { useAuth } from '@/lib/firebase';
+import { useAuth } from '@/lib/auth-hooks';
 
 interface Job {
   id: string;
@@ -16,6 +16,8 @@ interface Job {
   posted?: string;
   salary?: string;
   remote?: boolean;
+  fitScore?: number;
+  matchingSkills?: string[];
 }
 
 export default function JobMatchList() {
@@ -27,15 +29,19 @@ export default function JobMatchList() {
   const { user } = useAuth();
 
   const searchJobs = async () => {
+    if (!user) {
+      alert('Please sign in to search jobs');
+      return;
+    }
+
     setLoading(true);
     try {
+      // Add user ID to request so API can fetch profile
       const response = await fetch('/api/search-jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query: 'Senior Frontend Developer React TypeScript',
-          location: 'United States',
-          remote: true,
+          userId: user.uid, // ✅ Pass user ID so API can read profile
         }),
       });
 
@@ -66,7 +72,7 @@ export default function JobMatchList() {
         applyLink: job.applyLink,
         salary: job.salary,
         remote: job.remote,
-        status: 'applied', // ✅ FIXED: Must be one of the valid ApplicationStatus values
+        status: 'applied',
       });
 
       // 2. Generate AI cover letter
@@ -122,15 +128,30 @@ export default function JobMatchList() {
             const isSending = sending.has(job.id);
             const isExpanded = expandedJob === job.id;
             const hasCoverLetter = coverLetters[job.id];
+            const fitScore = job.fitScore || 0;
+            const isExcellentMatch = fitScore >= 80;
+            const isGoodMatch = fitScore >= 60;
             
             return (
               <div key={job.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
                 <div className="flex justify-between items-start mb-2">
-                  <div>
+                  <div className="flex-1">
                     <h4 className="font-semibold text-gray-900">{job.title}</h4>
                     <p className="text-blue-600">{job.company}</p>
                   </div>
-                  {job.remote && <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Remote</span>}
+                  <div className="flex flex-col items-end space-y-1">
+                    {job.remote && <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Remote</span>}
+                    {fitScore > 0 && (
+                      <span className={`px-2 py-1 text-xs rounded-full font-medium flex items-center ${
+                        isExcellentMatch ? 'bg-green-100 text-green-800' :
+                        isGoodMatch ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        <FiZap className="w-3 h-3 mr-1" />
+                        {fitScore}% Match
+                      </span>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="flex items-center text-sm text-gray-500 mb-2">
@@ -144,6 +165,14 @@ export default function JobMatchList() {
                     </>
                   )}
                 </div>
+
+                {job.matchingSkills && job.matchingSkills.length > 0 && (
+                  <div className="mb-2">
+                    <p className="text-xs text-gray-600">
+                      <span className="font-medium">Matching Skills:</span> {job.matchingSkills.join(', ')}
+                    </p>
+                  </div>
+                )}
                 
                 <p className={`text-sm text-gray-600 mb-3 ${isExpanded ? '' : 'line-clamp-2'}`}>
                   {job.description}

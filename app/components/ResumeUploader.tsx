@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { FiUpload, FiFileText, FiCheckCircle } from 'react-icons/fi';
-import { storage, firestore } from '@/lib/firebase';
+import { storage, firestore } from '@/lib/auth-hooks';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, setDoc } from 'firebase/firestore';
-import { useAuth } from '@/lib/firebase';
+import { useAuth } from '@/lib/auth-hooks';
 
 export default function ResumeUploader() {
   const [uploading, setUploading] = useState(false);
