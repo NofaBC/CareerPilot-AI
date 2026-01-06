@@ -78,65 +78,63 @@ export default function JobMatchList() {
   };
 
   const handleSmartApply = (job: Job) => {
-    // 1. Validate link exists
+    // CRITICAL: All validation must be synchronous - NO async before window.open()
     if (!job.applyLink) {
       alert('No application link available for this job');
       return;
     }
 
-    // 2. OPEN LINK IMMEDIATELY - Must happen before any async operations to avoid popup blocker
-    console.log('🔍 Opening job link:', job.applyLink);
+    // OPEN WINDOW IMMEDIATELY - This must be the very first thing after validation
     const newWindow = window.open(job.applyLink, '_blank', 'noopener,noreferrer');
     
     // Check if popup was blocked
-    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-      alert('⚠️ Pop-up blocked by browser!\n\nPlease allow pop-ups for career-pilot-ai.vercel.app or click "View Details" and apply manually.');
+    if (!newWindow || newWindow.closed) {
+      alert('⚠️ Pop-up blocked!\n\nPlease allow pop-ups for this site. Click "View Details" to see the job link.');
       return;
     }
 
-    // 3. Set loading state
-    setSending(prev => new Set(prev).add(job.id));
+    // Use setTimeout to defer all other operations (preserves popup context)
+    setTimeout(() => {
+      setSending(prev => new Set(prev).add(job.id));
+      
+      // Async operations run in background
+      (async () => {
+        try {
+          if (user) {
+            await trackApplication(user.uid, {
+              jobId: job.id,
+              jobTitle: job.title,
+              company: job.company,
+              location: job.location,
+              applyLink: job.applyLink!, // Non-null assertion - we validated above
+              salary: job.salary,
+              remote: job.remote,
+              status: 'applied',
+            });
+            console.log('✅ Application tracked in Firebase');
+          }
 
-    // 4. Run async operations in background (don't block user)
-    (async () => {
-      try {
-        // Track application in Firebase
-        if (user) {
-          await trackApplication(user.uid, {
-            jobId: job.id,
-            jobTitle: job.title,
-            company: job.company,
-            location: job.location,
-            applyLink: job.applyLink!, // Non-null assertion since we validated above
-            salary: job.salary,
-            remote: job.remote,
-            status: 'applied',
+          if (resumeText && job.description) {
+            const coverLetter = await generateCoverLetter(
+              job.title,
+              job.company,
+              job.description,
+              resumeText
+            );
+            setCoverLetters(prev => ({ ...prev, [job.id]: coverLetter }));
+            console.log('✅ Cover letter generated');
+          }
+        } catch (error) {
+          console.error('Background operations failed:', error);
+        } finally {
+          setSending(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(job.id);
+            return newSet;
           });
-          console.log('✅ Application tracked in Firebase');
         }
-
-        // Generate cover letter
-        if (resumeText && job.description) {
-          console.log('🤖 Generating cover letter...');
-          const coverLetter = await generateCoverLetter(
-            job.title,
-            job.company,
-            job.description,
-            resumeText
-          );
-          setCoverLetters(prev => ({ ...prev, [job.id]: coverLetter }));
-          console.log('✅ Cover letter generated and saved');
-        }
-      } catch (error) {
-        console.error('❌ Background operations failed:', error);
-      } finally {
-        setSending(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(job.id);
-          return newSet;
-        });
-      }
-    })();
+      })();
+    }, 50); // Tiny delay ensures popup opens first
   };
 
   return (
