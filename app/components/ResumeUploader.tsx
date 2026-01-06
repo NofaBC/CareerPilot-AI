@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { FiUpload, FiFileText, FiCheckCircle } from 'react-icons/fi';
-import { storage, firestore } from '@/lib/auth-hooks';
+import { firestore, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, setDoc } from 'firebase/firestore';
 import { useAuth } from '@/lib/auth-hooks';
