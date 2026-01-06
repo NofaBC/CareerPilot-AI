@@ -14,7 +14,7 @@ interface Job {
   company: string;
   location: string;
   description: string;
-  applyLink?: string;
+  applyLink?: string; // Keep optional but handle in validation
   posted?: string;
   salary?: string;
   remote?: boolean;
@@ -92,7 +92,7 @@ export default function JobMatchList() {
     if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
       alert('⚠️ Pop-up blocked by browser!\n\nPlease allow pop-ups for this site or click the link manually.');
       // Fallback: Show the link to user
-      if (confirm('Open link in current tab instead?')) {
+      if (confirm(`Open this link manually?\n\n${job.applyLink}`)) {
         window.location.href = job.applyLink;
       }
       return;
@@ -114,7 +114,8 @@ export default function JobMatchList() {
             jobTitle: job.title,
             company: job.company,
             location: job.location,
-            applyLink: job.applyLink,
+            // FIX: Use non-null assertion since we validated applyLink exists
+            applyLink: job.applyLink!,
             salary: job.salary,
             remote: job.remote,
             status: 'applied',
