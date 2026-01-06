@@ -31,7 +31,6 @@ export default function JobMatchList() {
   const [resumeText, setResumeText] = useState<string>('');
   const { user } = useAuth();
 
-  // Load user's resume text for cover letter generation
   useEffect(() => {
     const loadProfile = async () => {
       if (!user) return;
@@ -64,7 +63,6 @@ export default function JobMatchList() {
       });
 
       const data = await response.json();
-      console.log('Job search results:', data.jobs);
       setJobs(data.jobs || []);
     } catch (error) {
       console.error('Failed to search jobs:', error);
@@ -78,63 +76,56 @@ export default function JobMatchList() {
   };
 
   const handleSmartApply = (job: Job) => {
-    // CRITICAL: All validation must be synchronous - NO async before window.open()
+    // CRITICAL: Only synchronous validation before window.open()
     if (!job.applyLink) {
       alert('No application link available for this job');
       return;
     }
 
-    // OPEN WINDOW IMMEDIATELY - This must be the very first thing after validation
+    // ABSOLUTELY NOTHING ELSE HERE - Open window IMMEDIATELY
     const newWindow = window.open(job.applyLink, '_blank', 'noopener,noreferrer');
     
-    // Check if popup was blocked
+    // Check if blocked
     if (!newWindow || newWindow.closed) {
-      alert('⚠️ Pop-up blocked!\n\nPlease allow pop-ups for this site. Click "View Details" to see the job link.');
+      alert('⚠️ Pop-up blocked! Please allow pop-ups for this site.');
       return;
     }
 
-    // Use setTimeout to defer all other operations (preserves popup context)
-    setTimeout(() => {
-      setSending(prev => new Set(prev).add(job.id));
-      
-      // Async operations run in background
-      (async () => {
-        try {
-          if (user) {
-            await trackApplication(user.uid, {
-              jobId: job.id,
-              jobTitle: job.title,
-              company: job.company,
-              location: job.location,
-              applyLink: job.applyLink!, // Non-null assertion - we validated above
-              salary: job.salary,
-              remote: job.remote,
-              status: 'applied',
-            });
-            console.log('✅ Application tracked in Firebase');
-          }
+    // NOW we can update state - after window is open
+    setSending(prev => new Set(prev).add(job.id));
 
-          if (resumeText && job.description) {
-            const coverLetter = await generateCoverLetter(
-              job.title,
-              job.company,
-              job.description,
-              resumeText
-            );
-            setCoverLetters(prev => ({ ...prev, [job.id]: coverLetter }));
-            console.log('✅ Cover letter generated');
-          }
-        } catch (error) {
-          console.error('Background operations failed:', error);
-        } finally {
-          setSending(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(job.id);
-            return newSet;
+    // Fire-and-forget async operations
+    (async () => {
+      try {
+        if (user) {
+          await trackApplication(user.uid, {
+            jobId: job.id,
+            jobTitle: job.title,
+            company: job.company,
+            location: job.location,
+            applyLink: job.applyLink!,
+            salary: job.salary,
+            remote: job.remote,
+            status: 'applied',
           });
+          console.log('✅ Application tracked');
         }
-      })();
-    }, 50); // Tiny delay ensures popup opens first
+        
+        if (resumeText && job.description) {
+          const coverLetter = await generateCoverLetter(job.title, job.company, job.description, resumeText);
+          setCoverLetters(prev => ({ ...prev, [job.id]: coverLetter }));
+          console.log('✅ Cover letter generated');
+        }
+      } catch (error) {
+        console.error('Background operations failed:', error);
+      } finally {
+        setSending(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(job.id);
+          return newSet;
+        });
+      }
+    })();
   };
 
   return (
