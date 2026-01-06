@@ -53,10 +53,15 @@ export default function BuildProfilePage() {
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
+
+  
+
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center">
           <FiUser className="w-10 h-10 mr-3 text-blue-600" />
