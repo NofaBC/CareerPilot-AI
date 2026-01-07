@@ -171,7 +171,7 @@ function filterJobsByRole(jobs: any[], targetRole: string, userSkills: string[])
     }
     
     // Fallback: check title keywords
-    return roleMatchers[userCategory].some(keyword => jobTitle.includes(keyword));
+    return roleMatchers[userCategory as keyof typeof roleMatchers].some(keyword => jobTitle.includes(keyword));
   });
 
   // If no matches found, return top 3 highest scoring jobs
