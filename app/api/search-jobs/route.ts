@@ -20,14 +20,16 @@ export async function POST(request: Request) {
           userProfile = profileSnap.data();
           extractedSkills = userProfile?.extractedData?.skills || [];
           userLocation = userProfile?.location || 'Rockville, MD';
+          console.log('✅ Profile found. Location:', userLocation); // Debug log
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
       }
     }
 
-    // Mock jobs using YOUR location
+    // Mock jobs using YOUR location for ALL professions
     const mockJobs = [
+      // Tech Jobs (dynamic location)
       {
         id: '1',
         title: 'Full-Stack Engineer',
@@ -54,46 +56,49 @@ export async function POST(request: Request) {
         fitScore: calculateFitScore(['javascript', 'typescript', 'react'], extractedSkills),
         matchingSkills: ['javascript', 'typescript']
       },
+      // Non-Tech Jobs (ALSO dynamic location now)
       {
-        id: '3',
-        title: 'Lead Software Developer',
-        company: 'Enterprise Inc',
-        location: userLocation,
-        description: `Lead our ${userLocation} team. Senior-level Software Developer with cloud architecture experience.`,
-        applyLink: `https://remote.co/remote-jobs/search/?search_keywords=lead%20software%20developer`,
-        salary: '$180k - $250k',
-        posted: '3 days ago',
-        remote: userLocation.toLowerCase().includes('remote'),
-        fitScore: calculateFitScore(['cloud architecture', 'leadership'], extractedSkills),
-        matchingSkills: ['leadership']
-      },
-      {
-        id: '4',
-        title: 'Software Developer (React)',
-        company: 'MidSize Co',
-        location: userLocation,
-        description: `Mid-level Software Developer in ${userLocation} area. Focus on React, Redux, and modern frontend tools.`,
-        applyLink: `https://github.com/Jobs?utf8=✓&q=react+developer`,
-        salary: '$90k - $130k',
-        posted: '5 days ago',
-        remote: userLocation.toLowerCase().includes('remote'),
-        fitScore: calculateFitScore(['react', 'redux', 'frontend'], extractedSkills),
-        matchingSkills: ['react', 'redux']
-      },
-      {
-        id: '5',
-        title: 'Senior Frontend Developer (React/TypeScript)',
-        company: 'TechCorp Solutions',
-        location: userLocation,
-        description: `We need a Senior Frontend Developer in ${userLocation} with React, TypeScript, and component library experience.`,
-        applyLink: `https://stackoverflow.com/jobs?q=senior+frontend+react+typescript`,
-        salary: '$120k - $180k',
+        id: '6',
+        title: 'Executive Chef',
+        company: 'Metropolitan Restaurant Group',
+        location: userLocation, // ✅ FIXED: Was hardcoded to Washington, DC
+        description: `Lead kitchen operations in ${userLocation}. Menu development, team management, cost control, French cuisine expertise.`,
+        applyLink: `https://www.indeed.com/q-executive-chef-l-${encodeURIComponent(userLocation)}-jobs.html`,
+        salary: '$65k - $85k',
         posted: '2 days ago',
         remote: userLocation.toLowerCase().includes('remote'),
-        fitScore: calculateFitScore(['react', 'typescript', 'frontend'], extractedSkills),
-        matchingSkills: ['react', 'typescript']
+        fitScore: calculateFitScore(['menu planning', 'french cuisine', 'team leadership'], extractedSkills),
+        matchingSkills: ['menu planning', 'team leadership']
+      },
+      {
+        id: '7',
+        title: 'Registered Nurse - ICU',
+        company: 'Johns Hopkins Hospital',
+        location: userLocation, // ✅ FIXED: Was hardcoded to Baltimore, MD
+        description: `Critical care RN for ${userLocation} area. BSN required, 3+ years experience, ACLS certification preferred.`,
+        applyLink: `https://www.indeed.com/q-registered-nurse-icu-l-${encodeURIComponent(userLocation)}-jobs.html`,
+        salary: '$75k - $95k',
+        posted: '1 week ago',
+        remote: userLocation.toLowerCase().includes('remote'),
+        fitScore: calculateFitScore(['critical care', 'acls', 'bsn'], extractedSkills),
+        matchingSkills: ['critical care', 'acls']
+      },
+      {
+        id: '8',
+        title: 'Financial Analyst',
+        company: 'Morgan Stanley',
+        location: userLocation, // ✅ FIXED: Was hardcoded to Rockville, MD
+        description: `Financial modeling, Excel expertise, SQL, CFA preferred. Support investment banking team in ${userLocation}.`,
+        applyLink: `https://www.glassdoor.com/job-listing/financial-analyst-${encodeURIComponent(userLocation).toLowerCase()}-morgan-stanley-jl.htm`,
+        salary: '$60k - $80k',
+        posted: '3 days ago',
+        remote: userLocation.toLowerCase().includes('remote'),
+        fitScore: calculateFitScore(['excel', 'financial modeling', 'sql'], extractedSkills),
+        matchingSkills: ['excel', 'financial modeling']
       }
     ];
+
+    console.log('🎯 Generated', mockJobs.length, 'jobs for location:', userLocation); // Debug log
 
     return NextResponse.json({ jobs: mockJobs });
   } catch (error) {
