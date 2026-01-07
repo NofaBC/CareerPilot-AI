@@ -1,4 +1,4 @@
-import { openai, isOpenAIConfigured } from './openai-client';
+import { getOpenAIClient, isOpenAIConfigured } from './openai-client';
 
 export async function generateCoverLetter(
   jobTitle: string,
@@ -8,13 +8,15 @@ export async function generateCoverLetter(
 ): Promise<string> {
   console.log('=== AI Cover Letter Starting ===');
   
-  if (!isOpenAIConfigured) {
-    console.warn('OpenAI (OpenRouter) not configured - using placeholder');
+  const client = getOpenAIClient();
+  
+  if (!client || !isOpenAIConfigured()) {
+    console.warn('⚠️ OpenRouter not configured - using placeholder');
     return generatePlaceholderCoverLetter(jobTitle, company);
   }
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: "gpt-5.2",
       messages: [
         {
