@@ -2,6 +2,21 @@ import { NextResponse } from 'next/server';
 import { firestore } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
+interface Job {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  description: string;
+  applyLink?: string;
+  posted?: string;
+  salary?: string;
+  remote?: boolean;
+  fitScore?: number;
+  matchingSkills?: string[];
+  category?: string;
+}
+
 export async function POST(request: Request) {
   try {
     const { userId } = await request.json();
@@ -30,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     // Mock jobs for ALL professions
-    const mockJobs = [
+    const mockJobs: Job[] = [
       // Tech Jobs
       {
         id: '1',
@@ -130,8 +145,8 @@ export async function POST(request: Request) {
   }
 }
 
-// Filter jobs based on user's target role (FIXED TYPE ERRORS)
-function filterJobsByRole(jobs: any[], targetRole: string, userSkills: string[]): any[] {
+// Filter jobs based on user's target role (TypeScript-safe)
+function filterJobsByRole(jobs: Job[], targetRole: string, userSkills: string[]): Job[] {
   if (!targetRole || jobs.length === 0) return jobs;
 
   const target = targetRole.toLowerCase();
@@ -147,7 +162,8 @@ function filterJobsByRole(jobs: any[], targetRole: string, userSkills: string[])
   };
 
   // Find which category the user's target matches
-  let userCategory = null as keyof typeof roleMatchers | null;
+  let userCategory: keyof typeof roleMatchers | null = null;
+  
   for (const [category, keywords] of Object.entries(roleMatchers)) {
     if (keywords.some(keyword => target.includes(keyword))) {
       userCategory = category as keyof typeof roleMatchers;
@@ -161,7 +177,7 @@ function filterJobsByRole(jobs: any[], targetRole: string, userSkills: string[])
   }
 
   // Filter jobs that match the user's category
-  const filtered = jobs.filter(job => {
+  const filtered = jobs.filter((job: Job) => {
     const jobTitle = job.title.toLowerCase();
     const jobCategory = job.category;
     
