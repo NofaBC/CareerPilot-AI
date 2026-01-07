@@ -103,6 +103,7 @@ export default function JobMatchList() {
         // Track application in Firebase
         if (user) {
           await trackApplication(user.uid, {
+            userId: user.uid, // ✅ FIXED: Added missing userId
             jobId: job.id,
             jobTitle: job.title,
             company: job.company,
