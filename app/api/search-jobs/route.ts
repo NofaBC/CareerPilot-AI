@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     if (userId) {
       try {
-        const profileRef = doc(firestore, 'users', user.uid, 'profile', 'main');
+        const profileRef = doc(firestore, 'users', userId, 'profile', 'main');
         const profileSnap = await getDoc(profileRef);
         
         if (profileSnap.exists()) {
