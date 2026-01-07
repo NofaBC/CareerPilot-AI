@@ -1,9 +1,4 @@
-import OpenAI from 'openai';
-
-// Initialize OpenAI client only if API key exists
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-}) : null;
+import { openai, isOpenAIConfigured } from './openai-client';
 
 export async function generateCoverLetter(
   jobTitle: string,
@@ -11,34 +6,53 @@ export async function generateCoverLetter(
   jobDescription: string,
   resumeText: string
 ): Promise<string> {
-  // Check if OpenAI is configured
-  if (!openai) {
-    console.warn('OpenAI not configured - returning placeholder cover letter');
-    return `Dear Hiring Manager,\n\nI am writing to express my interest in the ${jobTitle} position at ${company}.\n\nBest regards,\nApplicant`;
+  console.log('=== AI Cover Letter Starting ===');
+  
+  if (!isOpenAIConfigured) {
+    console.warn('OpenAI (OpenRouter) not configured - using placeholder');
+    return generatePlaceholderCoverLetter(jobTitle, company);
   }
 
   try {
-    const prompt = `
-You are a professional career coach. Write a compelling cover letter for the following job:
-
-Job: ${jobTitle} at ${company}
-Description: ${jobDescription}
-
-Applicant's experience: ${resumeText}
-
-Write a concise, professional cover letter (200-300 words) that highlights relevant skills and demonstrates enthusiasm for the role.
-`;
-
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4-turbo',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 400,
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5.2",
+      messages: [
+        {
+          role: "system",
+          content: `You are a professional career coach specializing in writing compelling cover letters. Write a personalized cover letter that:
+          1. Opens with enthusiasm for the specific role
+          2. Highlights 2-3 relevant skills from the resume
+          3. Mentions the company name and why they're a good fit
+          4. Closes with a strong call to action
+          Format professionally with proper paragraphs.`
+        },
+        {
+          role: "user",
+          content: `Job: ${jobTitle} at ${company}\nDescription: ${jobDescription}\nMy Resume: ${resumeText}`
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 600,
     });
 
-    return response.choices[0]?.message?.content || 'Failed to generate cover letter';
+    const coverLetter = completion.choices[0]?.message?.content || '';
+    console.log('✅ AI-generated cover letter:', coverLetter.substring(0, 100) + '...');
+    return coverLetter;
   } catch (error) {
-    console.error('OpenAI error:', error);
-    // Fallback to placeholder if API fails
-    return `Dear Hiring Manager,\n\nI am writing to express my interest in the ${jobTitle} position at ${company}.\n\nBest regards,\nApplicant`;
+    console.error('OpenRouter API error:', error);
+    return generatePlaceholderCoverLetter(jobTitle, company);
   }
+}
+
+function generatePlaceholderCoverLetter(jobTitle: string, company: string): string {
+  return `Dear Hiring Manager,
+
+I am writing to express my strong interest in the ${jobTitle} position at ${company}. 
+
+With my proven track record and passion for excellence, I am confident I would be a valuable asset to your team.
+
+I look forward to the opportunity to discuss how my skills and experience align with your needs.
+
+Best regards,
+Applicant`;
 }
