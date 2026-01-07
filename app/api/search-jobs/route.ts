@@ -9,19 +9,17 @@ export async function POST(request: Request) {
     // Fetch user profile
     let userProfile = null;
     let extractedSkills: string[] = [];
-    let targetRole = '';
-    let userLocation = 'Rockville, MD'; // Default
+    let userLocation = 'Rockville, MD'; // Default fallback
 
     if (userId) {
       try {
-        const profileRef = doc(firestore, 'users', userId, 'profile', 'main');
+        const profileRef = doc(firestore, 'users', user.uid, 'profile', 'main');
         const profileSnap = await getDoc(profileRef);
         
         if (profileSnap.exists()) {
           userProfile = profileSnap.data();
           extractedSkills = userProfile?.extractedData?.skills || [];
-          targetRole = userProfile?.targetRole || '';
-          userLocation = userProfile?.location || 'Rockville, MD'; // ✅ YOUR LOCATION
+          userLocation = userProfile?.location || 'Rockville, MD';
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -34,7 +32,7 @@ export async function POST(request: Request) {
         id: '1',
         title: 'Full-Stack Engineer',
         company: 'StartupXYZ',
-        location: userLocation, // ✅ Dynamic location
+        location: userLocation,
         description: `Join our ${userLocation} team as a Software Developer. Skills: JavaScript, Web Development, React, Node.js.`,
         applyLink: `https://www.linkedin.com/jobs/search/?keywords=full%20stack%20engineer&location=${encodeURIComponent(userLocation)}`,
         salary: '$100k - $150k',
@@ -47,7 +45,7 @@ export async function POST(request: Request) {
         id: '2',
         title: 'Senior Software Developer',
         company: 'DesignFirst Agency',
-        location: userLocation, // ✅ Dynamic location
+        location: userLocation,
         description: `Senior Software Developer for ${userLocation}. JavaScript, TypeScript, React required.`,
         applyLink: `https://www.indeed.com/q-senior-software-developer-l-${encodeURIComponent(userLocation)}-jobs.html`,
         salary: '$110k - $160k',
@@ -56,19 +54,44 @@ export async function POST(request: Request) {
         fitScore: calculateFitScore(['javascript', 'typescript', 'react'], extractedSkills),
         matchingSkills: ['javascript', 'typescript']
       },
-      // Add similar changes for jobs 3-5...
       {
         id: '3',
-        title: 'Executive Chef',
-        company: 'Metropolitan Restaurant Group',
+        title: 'Lead Software Developer',
+        company: 'Enterprise Inc',
         location: userLocation,
-        description: `Lead kitchen operations in ${userLocation}. Menu development, team management, cost control.`,
-        applyLink: `https://www.indeed.com/q-executive-chef-l-${encodeURIComponent(userLocation)}-jobs.html`,
-        salary: '$65k - $85k',
+        description: `Lead our ${userLocation} team. Senior-level Software Developer with cloud architecture experience.`,
+        applyLink: `https://remote.co/remote-jobs/search/?search_keywords=lead%20software%20developer`,
+        salary: '$180k - $250k',
+        posted: '3 days ago',
+        remote: userLocation.toLowerCase().includes('remote'),
+        fitScore: calculateFitScore(['cloud architecture', 'leadership'], extractedSkills),
+        matchingSkills: ['leadership']
+      },
+      {
+        id: '4',
+        title: 'Software Developer (React)',
+        company: 'MidSize Co',
+        location: userLocation,
+        description: `Mid-level Software Developer in ${userLocation} area. Focus on React, Redux, and modern frontend tools.`,
+        applyLink: `https://github.com/Jobs?utf8=✓&q=react+developer`,
+        salary: '$90k - $130k',
+        posted: '5 days ago',
+        remote: userLocation.toLowerCase().includes('remote'),
+        fitScore: calculateFitScore(['react', 'redux', 'frontend'], extractedSkills),
+        matchingSkills: ['react', 'redux']
+      },
+      {
+        id: '5',
+        title: 'Senior Frontend Developer (React/TypeScript)',
+        company: 'TechCorp Solutions',
+        location: userLocation,
+        description: `We need a Senior Frontend Developer in ${userLocation} with React, TypeScript, and component library experience.`,
+        applyLink: `https://stackoverflow.com/jobs?q=senior+frontend+react+typescript`,
+        salary: '$120k - $180k',
         posted: '2 days ago',
-        remote: false,
-        fitScore: calculateFitScore(['menu planning', 'team leadership'], extractedSkills),
-        matchingSkills: ['menu planning', 'team leadership']
+        remote: userLocation.toLowerCase().includes('remote'),
+        fitScore: calculateFitScore(['react', 'typescript', 'frontend'], extractedSkills),
+        matchingSkills: ['react', 'typescript']
       }
     ];
 
