@@ -1,104 +1,102 @@
-import OpenAI from 'openai';
-import { firestore } from '@/lib/firebase';
+import { openai, isOpenAIConfigured } from './openai-client';
 import { doc, updateDoc } from 'firebase/firestore';
+import { firestore } from './firebase';
 
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-}) : null;
-
-interface ExtractedProfileData {
-  skills: string[];
-  experienceYears: number;
-  jobTitles: string[];
-  industries: string[];
-}
-
-export async function extractProfileFromResume(
-  userId: string,
-  resumeText: string
-): Promise<ExtractedProfileData> {
+export async function extractProfileFromResume(userId: string, resumeText: string) {
   console.log('=== AI Extraction Starting ===');
   console.log('User ID:', userId);
   console.log('Resume length:', resumeText.length);
 
-  if (!openai) {
-    console.warn('OpenAI not configured - using fallback extraction');
-    return fallbackExtraction(resumeText);
+  if (!isOpenAIConfigured) {
+    console.warn('OpenAI (OpenRouter) not configured - using fallback extraction');
+    return fallbackExtract(resumeText);
   }
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4-turbo',
-      messages: [{
-        role: 'user',
-        content: `Extract structured career data from this resume. Return ONLY a JSON object with these exact keys:
-
-{
-  "skills": ["skill1", "skill2"],
-  "experienceYears": 5,
-  "jobTitles": ["Job Title 1", "Job Title 2"],
-  "industries": ["Industry 1", "Industry 2"]
-}
-
-Resume to analyze:
-${resumeText}
-
-Return ONLY the JSON object.`
-      }],
-      max_tokens: 800,
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5.2",
+      messages: [
+        {
+          role: "system",
+          content: `You are a resume parsing AI. Extract structured data from resumes. Return ONLY a JSON object with these fields:
+          {
+            "skills": ["skill1", "skill2"],
+            "experienceYears": number,
+            "jobTitles": ["title1", "title2"],
+            "industries": ["industry1"]
+          }`
+        },
+        {
+          role: "user",
+          content: `Extract data from this resume:\n\n${resumeText}`
+        }
+      ],
       temperature: 0.3,
+      max_tokens: 500,
     });
 
-    const content = response.choices[0]?.message?.content || '';
-    console.log('OpenAI raw response:', content);
-
-    // Extract JSON from response
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const content = completion.choices[0]?.message?.content || '';
     
-    if (!jsonMatch) {
-      throw new Error('No valid JSON found in OpenAI response');
+    try {
+      const extractedData = JSON.parse(content);
+      console.log('✅ AI extracted data:', extractedData);
+      return extractedData;
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', parseError);
+      return fallbackExtract(resumeText);
     }
-
-    const extracted = JSON.parse(jsonMatch[0]);
-    console.log('✅ Successfully extracted:', extracted);
-
-    return {
-      skills: extracted.skills.slice(0, 10),
-      experienceYears: extracted.experienceYears || 3,
-      jobTitles: extracted.jobTitles || [],
-      industries: extracted.industries || [],
-    };
   } catch (error) {
-    console.error('❌ OpenAI extraction failed:', error);
-    return fallbackExtraction(resumeText);
+    console.error('OpenRouter API error:', error);
+    return fallbackExtract(resumeText);
   }
 }
 
-function fallbackExtraction(text: string): ExtractedProfileData {
-  const skillKeywords = ['react', 'typescript', 'javascript', 'node', 'python', 'aws', 'docker'];
-  const foundSkills = skillKeywords.filter(skill => 
-    text.toLowerCase().includes(skill.toLowerCase())
-  );
-
-  const yearsMatch = text.match(/\b(\d+)\s+years\b/i);
-  const experienceYears = yearsMatch ? parseInt(yearsMatch[1]) : 3;
-
-  return {
-    skills: foundSkills.length > 0 ? foundSkills : ['Web Development'],
-    experienceYears,
-    jobTitles: ['Developer'],
-    industries: ['Technology'],
-  };
-}
-
-export async function updateExtractedProfileData(
-  userId: string,
-  data: ExtractedProfileData
-): Promise<void> {
+export async function updateExtractedProfileData(userId: string, extractedData: any) {
   const profileRef = doc(firestore, 'users', userId, 'profile', 'main');
   await updateDoc(profileRef, {
-    extractedData: data,
+    extractedData: extractedData,
     extractedAt: new Date().toISOString(),
   });
   console.log('✅ Extracted data saved to profile');
+}
+
+// Fallback extraction for when OpenAI/OpenRouter is not available
+function fallbackExtract(resumeText: string) {
+  const skills = [
+    // Tech
+    'javascript', 'typescript', 'react', 'node', 'python', 'sql', 'aws', 'docker',
+    // Business/Retail
+    'retail', 'sales', 'management', 'p&l', 'operations', 'inventory', 'merchandising', 'regional', 'director',
+    // Healthcare
+    'nurse', 'rn', 'bsn', 'acls', 'critical care', 'patient care',
+    // Finance
+    'excel', 'financial modeling', 'cfa', 'accounting',
+    // Culinary
+    'chef', 'cooking', 'menu planning', 'food safety', 'restaurant'
+  ];
+  
+  const extractedSkills = skills.filter(skill => 
+    resumeText.toLowerCase().includes(skill.toLowerCase())
+  );
+
+  return {
+    skills: extractedSkills,
+    experienceYears: extractYearsOfExperience(resumeText),
+    jobTitles: extractJobTitles(resumeText),
+    industries: extractIndustries(resumeText),
+  };
+}
+
+function extractYearsOfExperience(text: string): number {
+  const matches = text.match(/(\d+)\s*\+?\s*years?/i);
+  return matches ? parseInt(matches[1]) : 3;
+}
+
+function extractJobTitles(text: string): string[] {
+  const titles = ['Full Stack Developer', 'Frontend Developer', 'Software Engineer', 'Regional Manager', 'Sales Director', 'Executive Chef', 'Registered Nurse', 'Financial Analyst'];
+  return titles.filter(title => text.toLowerCase().includes(title.toLowerCase()));
+}
+
+function extractIndustries(text: string): string[] {
+  return ['Technology']; // Simplified for MVP
 }
