@@ -1,70 +1,51 @@
 import { firestore } from '@/lib/firebase';
-import { collection, addDoc, doc, updateDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
-
-export type ApplicationStatus = 'applied' | 'screening' | 'interview' | 'offer' | 'rejected';
+import { collection, addDoc, query, where, orderBy, getDocs } from 'firebase/firestore';
 
 export interface Application {
-  id?: string;
+  id: string;
   userId: string;
   jobId: string;
   jobTitle: string;
   company: string;
   location?: string;
-  applyLink: string;
-  status: ApplicationStatus;
-  appliedAt: Date;
-  notes?: string;
+  applyLink?: string;
   salary?: string;
   remote?: boolean;
+  status: 'applied' | 'interview' | 'offer' | 'rejected' | 'screening';
+  appliedAt: string;
 }
 
-// Track a new application
-export async function trackApplication(userId: string, jobData: Omit<Application, 'id' | 'userId' | 'appliedAt'>) {
+export async function trackApplication(userId: string, applicationData: Omit<Application, 'id' | 'appliedAt'>) {
   try {
-    const appData = {
-      ...jobData,
+    const applicationsRef = collection(firestore, 'applications');
+    await addDoc(applicationsRef, {
+      ...applicationData,
       userId,
-      appliedAt: new Date(),
-      status: 'applied' as ApplicationStatus,
-    };
-    
-    const docRef = await addDoc(collection(firestore, 'applications'), appData);
-    return docRef.id;
+      appliedAt: new Date().toISOString(),
+    });
+    console.log('✅ Application tracked in Firebase');
   } catch (error) {
     console.error('Error tracking application:', error);
     throw error;
   }
 }
 
-// Get user's applications
-export async function getUserApplications(userId: string) {
+export async function getUserApplications(userId: string): Promise<Application[]> {
   try {
+    const applicationsRef = collection(firestore, 'applications');
     const q = query(
-      collection(firestore, 'applications'),
-      where('userId', '==', userId)
+      applicationsRef,
+      where('userId', '==', userId),
+      orderBy('appliedAt', 'desc')
     );
     
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data(),
-      appliedAt: doc.data().appliedAt?.toDate(),
+      ...doc.data()
     })) as Application[];
   } catch (error) {
     console.error('Error fetching applications:', error);
     return [];
-  }
-}
-
-// Update application status
-export async function updateApplicationStatus(appId: string, status: ApplicationStatus) {
-  try {
-    await updateDoc(doc(firestore, 'applications', appId), {
-      status,
-      updatedAt: new Date(),
-    });
-  } catch (error) {
-    console.error('Error updating application:', error);
-    throw error;
   }
 }
