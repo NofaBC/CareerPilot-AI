@@ -1,4 +1,4 @@
-import { openai, isOpenAIConfigured } from './openai-client';
+import { getOpenAIClient, isOpenAIConfigured } from './openai-client';
 import { doc, updateDoc } from 'firebase/firestore';
 import { firestore } from './firebase';
 
@@ -7,13 +7,15 @@ export async function extractProfileFromResume(userId: string, resumeText: strin
   console.log('User ID:', userId);
   console.log('Resume length:', resumeText.length);
 
-  if (!isOpenAIConfigured) {
-    console.warn('OpenAI (OpenRouter) not configured - using fallback extraction');
+  const client = getOpenAIClient();
+  
+  if (!client || !isOpenAIConfigured()) {
+    console.warn('⚠️ OpenRouter not configured - using fallback extraction');
     return fallbackExtract(resumeText);
   }
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: "gpt-5.2",
       messages: [
         {
