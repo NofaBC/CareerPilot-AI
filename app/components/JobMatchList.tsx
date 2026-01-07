@@ -20,6 +20,7 @@ interface Job {
   remote?: boolean;
   fitScore?: number;
   matchingSkills?: string[];
+  category?: string;
 }
 
 export default function JobMatchList() {
@@ -31,6 +32,7 @@ export default function JobMatchList() {
   const [resumeText, setResumeText] = useState<string>('');
   const { user } = useAuth();
 
+  // Load user's resume text for cover letter generation
   useEffect(() => {
     const loadProfile = async () => {
       if (!user) return;
@@ -63,6 +65,7 @@ export default function JobMatchList() {
       });
 
       const data = await response.json();
+      console.log('Job search results:', data.jobs);
       setJobs(data.jobs || []);
     } catch (error) {
       console.error('Failed to search jobs:', error);
@@ -76,48 +79,56 @@ export default function JobMatchList() {
   };
 
   const handleSmartApply = (job: Job) => {
-    // Synchronous validation only
+    // CRITICAL: Only synchronous validation before window.open()
     if (!job.applyLink) {
-      alert('No application link available');
+      alert('No application link available for this job');
       return;
     }
 
-    // Open immediately - ZERO code before this
+    // ABSOLUTELY NOTHING ELSE HERE - Open window IMMEDIATELY
     const newWindow = window.open(job.applyLink, '_blank', 'noopener,noreferrer');
     
-    // Check if blocked
+    // Check if popup was blocked
     if (!newWindow || newWindow.closed) {
-      alert('⚠️ Pop-up blocked! Click "View Details" to see the job link.');
+      alert('⚠️ Pop-up blocked by browser!\n\nPlease allow pop-ups for this site or click "View Details" and apply manually.');
       return;
     }
 
-    // NOW update state
+    // NOW update state (after window is open)
     setSending(prev => new Set(prev).add(job.id));
 
-    // Background operations
+    // Run async operations in background (fire-and-forget)
     (async () => {
       try {
+        // Track application in Firebase
         if (user) {
           await trackApplication(user.uid, {
             jobId: job.id,
             jobTitle: job.title,
             company: job.company,
             location: job.location,
-            applyLink: job.applyLink!,
+            applyLink: job.applyLink!, // Non-null assertion - validated above
             salary: job.salary,
             remote: job.remote,
             status: 'applied',
           });
-          console.log('✅ Application tracked');
+          console.log('✅ Application tracked in Firebase');
         }
-        
+
+        // Generate cover letter
         if (resumeText && job.description) {
-          const coverLetter = await generateCoverLetter(job.title, job.company, job.description, resumeText);
+          console.log('🤖 Generating cover letter...');
+          const coverLetter = await generateCoverLetter(
+            job.title,
+            job.company,
+            job.description,
+            resumeText
+          );
           setCoverLetters(prev => ({ ...prev, [job.id]: coverLetter }));
           console.log('✅ Cover letter generated');
         }
       } catch (error) {
-        console.error('Background operations failed:', error);
+        console.error('❌ Background operations failed:', error);
       } finally {
         setSending(prev => {
           const newSet = new Set(prev);
