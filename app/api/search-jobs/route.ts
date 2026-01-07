@@ -108,7 +108,7 @@ export async function POST(request: Request) {
         title: 'Regional Sales Manager',
         company: 'RetailCorp',
         location: userLocation,
-        description: `Lead retail operations across ${userLocation} region. P&L management, team development, sales strategy, inventory optimization.`,
+        description: `Lead retail operations across ${userLocation} region. P&L management, team development, sales strategy, inventory optimization for multi-unit stores.`,
         applyLink: `https://www.indeed.com/q-regional-sales-manager-l-${encodeURIComponent(userLocation)}-jobs.html`,
         salary: '$90k - $130k',
         posted: '1 day ago',
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
   }
 }
 
-// Filter jobs based on user's target role
+// Filter jobs based on user's target role (FIXED TYPE ERRORS)
 function filterJobsByRole(jobs: any[], targetRole: string, userSkills: string[]): any[] {
   if (!targetRole || jobs.length === 0) return jobs;
 
@@ -147,10 +147,10 @@ function filterJobsByRole(jobs: any[], targetRole: string, userSkills: string[])
   };
 
   // Find which category the user's target matches
-  let userCategory = null;
+  let userCategory = null as keyof typeof roleMatchers | null;
   for (const [category, keywords] of Object.entries(roleMatchers)) {
     if (keywords.some(keyword => target.includes(keyword))) {
-      userCategory = category;
+      userCategory = category as keyof typeof roleMatchers;
       break;
     }
   }
@@ -171,7 +171,7 @@ function filterJobsByRole(jobs: any[], targetRole: string, userSkills: string[])
     }
     
     // Fallback: check title keywords
-    return roleMatchers[userCategory as keyof typeof roleMatchers].some(keyword => jobTitle.includes(keyword));
+    return roleMatchers[userCategory].some(keyword => jobTitle.includes(keyword));
   });
 
   // If no matches found, return top 3 highest scoring jobs
