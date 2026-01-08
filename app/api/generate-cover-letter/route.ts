@@ -2,9 +2,21 @@ import { NextResponse } from 'next/server';
 import { getOpenAIClient, isOpenAIConfigured } from '@/lib/openai-client';
 
 export async function POST(request: Request) {
+  let jobTitle = '', company = '', jobDescription = ''; // ✅ Declare outside try
+  
   try {
-    const { jobTitle, company, jobDescription, resumeText } = await request.json();
+    const body = await request.json();
+    jobTitle = body.jobTitle || '';
+    company = body.company || '';
+    jobDescription = body.jobDescription || '';
     
+    if (!jobTitle || !company) {
+      return NextResponse.json({ 
+        error: 'Missing required fields',
+        coverLetter: generatePlaceholderCoverLetter(jobTitle, company)
+      });
+    }
+
     const client = getOpenAIClient();
     
     if (!client || !isOpenAIConfigured()) {
@@ -27,7 +39,7 @@ export async function POST(request: Request) {
         },
         {
           role: "user",
-          content: `Job: ${jobTitle} at ${company}\nDescription: ${jobDescription}\nMy Resume: ${resumeText}`
+          content: `Job: ${jobTitle} at ${company}\nDescription: ${jobDescription}\nMy Resume: ${body.resumeText || ''}`
         }
       ],
       temperature: 0.7,
@@ -40,7 +52,7 @@ export async function POST(request: Request) {
     console.error('Cover letter generation error:', error);
     return NextResponse.json({ 
       error: 'Generation failed',
-      coverLetter: generatePlaceholderCoverLetter(jobTitle, company)
+      coverLetter: generatePlaceholderCoverLetter(jobTitle, company) // ✅ Now in scope
     });
   }
 }
