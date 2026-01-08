@@ -1,3 +1,4 @@
+// app/api/search-jobs/route.ts
 import { NextResponse } from 'next/server';
 import { firestore } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -8,209 +9,179 @@ interface Job {
   company: string;
   location: string;
   description: string;
-  applyLink?: string;
-  posted?: string;
+  applyLink: string;
+  posted: string;
   salary?: string;
   remote?: boolean;
-  fitScore?: number;
-  matchingSkills?: string[];
-  category?: string;
+  category: string;
+  requiredSkills: string[];
+}
+
+interface Profile {
+  targetRole: string;
+  location: string;
+  extractedData?: {
+    skills: string[];
+    experienceYears: number;
+    jobTitles: string[];
+    industries: string[];
+  };
+}
+
+// Mock job data across industries - only returns if matches profile
+const mockData: Job[] = [
+  {
+    id: '1',
+    title: 'Regional Sales Manager',
+    company: 'RetailCorp',
+    location: 'Austin, TX',
+    description: 'Lead retail operations across Texas region. P&L management, team development, sales strategy, inventory optimization for 20+ stores.',
+    applyLink: 'https://www.indeed.com/jobs?q=regional+sales+manager&l=Austin, TX',
+    posted: '1 day ago',
+    salary: '$90k - $130k',
+    remote: false,
+    category: 'retail',
+    requiredSkills: ['retail', 'sales', 'management', 'p&l', 'inventory']
+  },
+  {
+    id: '2',
+    title: 'Senior Full Stack Developer',
+    company: 'TechCorp Solutions',
+    location: 'Remote',
+    description: 'React, TypeScript, Node.js development for enterprise applications.',
+    applyLink: 'https://www.linkedin.com/jobs/search/?keywords=senior+full+stack+developer&location=Remote',
+    posted: '2 days ago',
+    salary: '$120k - $160k',
+    remote: true,
+    category: 'technology',
+    requiredSkills: ['react', 'typescript', 'node', 'javascript']
+  },
+  {
+    id: '3',
+    title: 'Registered Nurse - ICU',
+    company: 'Johns Hopkins Hospital',
+    location: 'Baltimore, MD',
+    description: 'Critical care RN. BSN required, 3+ years experience, ACLS certification preferred.',
+    applyLink: 'https://www.indeed.com/jobs?q=icu+registered+nurse&l=Baltimore, MD',
+    posted: '1 week ago',
+    salary: '$75k - $95k',
+    remote: false,
+    category: 'healthcare',
+    requiredSkills: ['nursing', 'critical care', 'acls', 'patient care']
+  },
+  {
+    id: '4',
+    title: 'Financial Analyst',
+    company: 'Morgan Stanley',
+    location: 'New York, NY',
+    description: 'Financial modeling, Excel expertise, SQL, CFA preferred. Support investment banking team.',
+    applyLink: 'https://www.glassdoor.com/Job/new-york-financial-analyst-jobs-SRCH_IL.0,8_IC1132348_KO9,25.htm',
+    posted: '3 days ago',
+    salary: '$80k - $110k',
+    remote: false,
+    category: 'finance',
+    requiredSkills: ['excel', 'financial modeling', 'sql', 'cfa']
+  }
+];
+
+// Calculate fit score based on profile skills vs job requirements
+function calculateFitScore(profile: Profile, job: Job): number {
+  const extractedSkills = profile.extractedData?.skills || [];
+  
+  if (extractedSkills.length === 0) return 70; // Fallback score
+
+  // Skill match calculation
+  const matchingSkills = job.requiredSkills.filter(skill =>
+    extractedSkills.some(userSkill => 
+      userSkill.toLowerCase().includes(skill.toLowerCase()) ||
+      skill.toLowerCase().includes(userSkill.toLowerCase())
+    )
+  );
+  
+  const skillScore = (matchingSkills.length / job.requiredSkills.length) * 100;
+  
+  // Location match (20 points)
+  const locationMatch = profile.location.toLowerCase() === 'remote' || job.remote
+    ? 20
+    : job.location.toLowerCase().includes(profile.location.toLowerCase())
+    ? 20
+    : 0;
+
+  // Target role relevance (10 points)
+  const roleRelevance = profile.targetRole.toLowerCase().includes(job.category) ||
+    job.title.toLowerCase().includes(profile.targetRole.toLowerCase())
+    ? 10
+    : 0;
+
+  return Math.min(100, Math.round(skillScore * 0.7 + locationMatch + roleRelevance));
 }
 
 export async function POST(request: Request) {
   try {
     const { userId } = await request.json();
+    
+    if (!userId) {
+      return NextResponse.json({ jobs: [] });
+    }
 
-    // Fetch user profile
-    let userProfile = null;
-    let extractedSkills: string[] = [];
-    let userLocation = 'Rockville, MD'; // Default fallback
-    let targetRole = '';
+    // CRITICAL: Fetch user profile from Firestore
+    const profileRef = doc(firestore, 'users', userId, 'profile', 'main');
+    const profileSnap = await getDoc(profileRef);
+    
+    // If no profile exists, return EMPTY array - no jobs shown
+    if (!profileSnap.exists()) {
+      console.log('No profile found for user:', userId);
+      return NextResponse.json({ jobs: [] });
+    }
 
-    if (userId) {
-      try {
-        const profileRef = doc(firestore, 'users', userId, 'profile', 'main');
-        const profileSnap = await getDoc(profileRef);
+    const profile = profileSnap.data() as Profile;
+    
+    // Extract location and skills
+    const userLocation = profile.location || 'Remote';
+    const extractedSkills = profile.extractedData?.skills || [];
+    
+    console.log('🎯 Profile found:', {
+      location: userLocation,
+      targetRole: profile.targetRole,
+      skills: extractedSkills
+    });
+
+    // Filter jobs based on profile data
+    const filteredJobs = mockData
+      .filter(job => {
+        // Location match: either exact match, remote, or user wants remote
+        const locationMatches = job.remote || 
+          job.location.toLowerCase().includes(userLocation.toLowerCase()) ||
+          userLocation.toLowerCase().includes('remote');
         
-        if (profileSnap.exists()) {
-          userProfile = profileSnap.data();
-          extractedSkills = userProfile?.extractedData?.skills || [];
-          userLocation = userProfile?.location || 'Rockville, MD';
-          targetRole = userProfile?.targetRole || '';
-          console.log('✅ Profile found. Location:', userLocation, 'Target role:', targetRole);
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-      }
-    }
+        // Skill/industry match: job category matches user's extracted skills/industry
+        const hasSkillOverlap = extractedSkills.some(skill => 
+          job.requiredSkills.includes(skill) || 
+          job.description.toLowerCase().includes(skill.toLowerCase())
+        );
+        
+        // Target role relevance
+        const roleMatches = profile.targetRole.toLowerCase().includes(job.category) ||
+          job.title.toLowerCase().includes(profile.targetRole.toLowerCase());
+        
+        return locationMatches && (hasSkillOverlap || roleMatches);
+      })
+      .map(job => ({
+        ...job,
+        fitScore: calculateFitScore(profile, job),
+        matchingSkills: extractedSkills.filter(skill =>
+          job.requiredSkills.includes(skill) || 
+          job.description.toLowerCase().includes(skill.toLowerCase())
+        )
+      }))
+      .sort((a, b) => b.fitScore - a.fitScore); // Highest matches first
 
-    // Mock jobs for ALL professions
-    const mockJobs: Job[] = [
-      // Tech Jobs
-      {
-        id: '1',
-        title: 'Full-Stack Engineer',
-        company: 'StartupXYZ',
-        location: userLocation,
-        description: `Join our ${userLocation} team as a Software Developer. Skills: JavaScript, Web Development, React, Node.js.`,
-        applyLink: `https://www.linkedin.com/jobs/search/?keywords=full%20stack%20engineer&location=${encodeURIComponent(userLocation)}`,
-        salary: '$100k - $150k',
-        posted: '1 week ago',
-        remote: userLocation.toLowerCase().includes('remote'),
-        fitScore: calculateFitScore(['javascript', 'web development', 'react', 'node'], extractedSkills),
-        matchingSkills: ['javascript', 'web development'],
-        category: 'tech'
-      },
-      {
-        id: '2',
-        title: 'Senior Software Developer',
-        company: 'DesignFirst Agency',
-        location: userLocation,
-        description: `Senior Software Developer for ${userLocation}. JavaScript, TypeScript, React required.`,
-        applyLink: `https://www.indeed.com/q-senior-software-developer-l-${encodeURIComponent(userLocation)}-jobs.html`,
-        salary: '$110k - $160k',
-        posted: '1 day ago',
-        remote: userLocation.toLowerCase().includes('remote'),
-        fitScore: calculateFitScore(['javascript', 'typescript', 'react'], extractedSkills),
-        matchingSkills: ['javascript', 'typescript'],
-        category: 'tech'
-      },
-      // Non-Tech Jobs
-      {
-        id: '6',
-        title: 'Executive Chef',
-        company: 'Metropolitan Restaurant Group',
-        location: userLocation,
-        description: `Lead kitchen operations in ${userLocation}. Menu development, team management, cost control, French cuisine expertise.`,
-        applyLink: `https://www.indeed.com/q-executive-chef-l-${encodeURIComponent(userLocation)}-jobs.html`,
-        salary: '$65k - $85k',
-        posted: '2 days ago',
-        remote: userLocation.toLowerCase().includes('remote'),
-        fitScore: calculateFitScore(['menu planning', 'french cuisine', 'team leadership'], extractedSkills),
-        matchingSkills: ['menu planning', 'team leadership'],
-        category: 'culinary'
-      },
-      {
-        id: '7',
-        title: 'Registered Nurse - ICU',
-        company: 'Johns Hopkins Hospital',
-        location: userLocation,
-        description: `Critical care RN for ${userLocation} area. BSN required, 3+ years experience, ACLS certification preferred.`,
-        applyLink: `https://www.indeed.com/q-registered-nurse-icu-l-${encodeURIComponent(userLocation)}-jobs.html`,
-        salary: '$75k - $95k',
-        posted: '1 week ago',
-        remote: userLocation.toLowerCase().includes('remote'),
-        fitScore: calculateFitScore(['critical care', 'acls', 'bsn'], extractedSkills),
-        matchingSkills: ['critical care', 'acls'],
-        category: 'healthcare'
-      },
-      {
-        id: '8',
-        title: 'Financial Analyst',
-        company: 'Morgan Stanley',
-        location: userLocation,
-        description: `Financial modeling, Excel expertise, SQL, CFA preferred. Support investment banking team in ${userLocation}.`,
-        applyLink: `https://www.glassdoor.com/job-listing/financial-analyst-${encodeURIComponent(userLocation).toLowerCase()}-morgan-stanley-jl.htm`,
-        salary: '$60k - $80k',
-        posted: '3 days ago',
-        remote: userLocation.toLowerCase().includes('remote'),
-        fitScore: calculateFitScore(['excel', 'financial modeling', 'sql'], extractedSkills),
-        matchingSkills: ['excel', 'financial modeling'],
-        category: 'finance'
-      },
-      {
-        id: '9',
-        title: 'Regional Sales Manager',
-        company: 'RetailCorp',
-        location: userLocation,
-        description: `Lead retail operations across ${userLocation} region. P&L management, team development, sales strategy, inventory optimization for multi-unit stores.`,
-        applyLink: `https://www.indeed.com/q-regional-sales-manager-l-${encodeURIComponent(userLocation)}-jobs.html`,
-        salary: '$90k - $130k',
-        posted: '1 day ago',
-        remote: userLocation.toLowerCase().includes('remote'),
-        fitScore: calculateFitScore(['retail', 'sales', 'management', 'p&l', 'inventory'], extractedSkills),
-        matchingSkills: ['retail', 'sales', 'management', 'inventory'],
-        category: 'retail'
-      }
-    ];
-
-    // Filter jobs based on target role
-    const filteredJobs = filterJobsByRole(mockJobs, targetRole, extractedSkills);
-    console.log(`🎯 Found ${filteredJobs.length} relevant jobs for: ${targetRole}`);
-
+    console.log(`🎉 Found ${filteredJobs.length} relevant jobs for: ${profile.targetRole}`);
+    
     return NextResponse.json({ jobs: filteredJobs });
+
   } catch (error) {
-    console.error('Search API error:', error);
-    return NextResponse.json({ error: 'Failed to search jobs' }, { status: 500 });
+    console.error('❌ Job search error:', error);
+    return NextResponse.json({ jobs: [] });
   }
-}
-
-// Filter jobs based on user's target role (TypeScript-safe)
-function filterJobsByRole(jobs: Job[], targetRole: string, userSkills: string[]): Job[] {
-  if (!targetRole || jobs.length === 0) return jobs;
-
-  const target = targetRole.toLowerCase();
-  
-  // Define role matching keywords
-  const roleMatchers = {
-    'software': ['software', 'developer', 'engineer', 'programmer', 'full-stack', 'frontend', 'backend'],
-    'chef': ['chef', 'cook', 'culinary', 'kitchen', 'sous', 'executive chef'],
-    'nurse': ['nurse', 'rn', 'registered nurse', 'icu', 'bsn', 'acls'],
-    'financial': ['financial', 'analyst', 'finance', 'accounting', 'cfa', 'excel'],
-    'retail': ['retail', 'sales', 'manager', 'regional', 'store', 'inventory', 'p&l'],
-    'manager': ['manager', 'director', 'regional', 'operations', 'team lead']
-  };
-
-  // Find which category the user's target matches
-  let userCategory: keyof typeof roleMatchers | null = null;
-  
-  for (const [category, keywords] of Object.entries(roleMatchers)) {
-    if (keywords.some(keyword => target.includes(keyword))) {
-      userCategory = category as keyof typeof roleMatchers;
-      break;
-    }
-  }
-
-  if (!userCategory) {
-    // If no clear category, return all jobs (original behavior)
-    return jobs;
-  }
-
-  // Filter jobs that match the user's category
-  const filtered = jobs.filter((job: Job) => {
-    const jobTitle = job.title.toLowerCase();
-    const jobCategory = job.category;
-    
-    // If job has explicit category, match directly
-    if (jobCategory) {
-      return jobCategory === userCategory;
-    }
-    
-    // Fallback: check title keywords
-    return roleMatchers[userCategory].some(keyword => jobTitle.includes(keyword));
-  });
-
-  // If no matches found, return top 3 highest scoring jobs
-  if (filtered.length === 0) {
-    console.log('⚠️ No direct matches, returning highest scoring jobs');
-    return jobs
-      .sort((a, b) => (b.fitScore || 0) - (a.fitScore || 0))
-      .slice(0, 3);
-  }
-
-  return filtered;
-}
-
-function calculateFitScore(jobSkills: string[], userSkills: string[]): number {
-  if (!userSkills || userSkills.length === 0) return 70; // Default if no skills extracted
-  
-  const matchingSkills = jobSkills.filter(skill => 
-    userSkills.some(userSkill => 
-      userSkill.toLowerCase().includes(skill.toLowerCase()) || 
-      skill.toLowerCase().includes(userSkill.toLowerCase())
-    )
-  );
-  
-  const matchPercentage = (matchingSkills.length / jobSkills.length) * 100;
-  return Math.max(60, Math.min(99, Math.round(matchPercentage)));
 }
