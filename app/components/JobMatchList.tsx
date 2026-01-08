@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { FiBriefcase, FiMapPin, FiDollarSign, FiExternalLink, FiMail, FiEye, FiZap } from 'react-icons/fi';
 import { trackApplication } from '@/lib/applications';
-import { generateCoverLetter } from '@/lib/email-service';
 import { useAuth } from '@/lib/auth-hooks';
 import { doc, getDoc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase';
@@ -78,14 +77,15 @@ export default function JobMatchList() {
     setExpandedJob(expandedJob === jobId ? null : jobId);
   };
 
-  const handleSmartApply = (job: Job) => {
-    // CRITICAL: Only synchronous validation before window.open()
+  const handleSmartApply = async (job: Job) => {
+    // 1. Validate link exists
     if (!job.applyLink) {
       alert('No application link available for this job');
       return;
     }
 
-    // ABSOLUTELY NOTHING ELSE HERE - Open window IMMEDIATELY
+    // 2. OPEN LINK IMMEDIATELY - Must happen before any async operations to avoid popup blocker
+    console.log('🔍 Opening job link:', job.applyLink);
     const newWindow = window.open(job.applyLink, '_blank', 'noopener,noreferrer');
     
     // Check if popup was blocked
@@ -94,21 +94,21 @@ export default function JobMatchList() {
       return;
     }
 
-    // NOW update state (after window is open)
+    // 3. Set loading state
     setSending(prev => new Set(prev).add(job.id));
 
-    // Run async operations in background (fire-and-forget)
+    // 4. Run async operations in background (fire-and-forget)
     (async () => {
       try {
         // Track application in Firebase
         if (user) {
           await trackApplication(user.uid, {
-            userId: user.uid, // ✅ FIXED: Added missing userId
+            userId: user.uid,
             jobId: job.id,
             jobTitle: job.title,
             company: job.company,
             location: job.location,
-            applyLink: job.applyLink!, // Non-null assertion - validated above
+            applyLink: job.applyLink!,
             salary: job.salary,
             remote: job.remote,
             status: 'applied',
@@ -116,17 +116,31 @@ export default function JobMatchList() {
           console.log('✅ Application tracked in Firebase');
         }
 
-        // Generate cover letter
+        // Generate cover letter via server API
         if (resumeText && job.description) {
-          console.log('🤖 Generating cover letter...');
-          const coverLetter = await generateCoverLetter(
-            job.title,
-            job.company,
-            job.description,
-            resumeText
-          );
-          setCoverLetters(prev => ({ ...prev, [job.id]: coverLetter }));
-          console.log('✅ Cover letter generated');
+          console.log('🤖 Generating cover letter via API...');
+          const response = await fetch('/api/generate-cover-letter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jobTitle: job.title,
+              company: job.company,
+              jobDescription: job.description,
+              resumeText: resumeText
+            })
+          });
+
+          const data = await response.json();
+          if (data.coverLetter) {
+            setCoverLetters(prev => ({ ...prev, [job.id]: data.coverLetter }));
+            console.log('✅ Cover letter generated via API');
+          } else {
+            console.warn('⚠️ Cover letter generation failed, using placeholder');
+            setCoverLetters(prev => ({ 
+              ...prev, 
+              [job.id]: generatePlaceholderCoverLetter(job.title, job.company) 
+            }));
+          }
         }
       } catch (error) {
         console.error('❌ Background operations failed:', error);
@@ -139,6 +153,20 @@ export default function JobMatchList() {
       }
     })();
   };
+
+  // Fallback placeholder generator (for when API fails)
+  function generatePlaceholderCoverLetter(jobTitle: string, company: string): string {
+    return `Dear Hiring Manager,
+
+I am writing to express my strong interest in the ${jobTitle} position at ${company}. 
+
+With my proven track record and passion for excellence, I am confident I would be a valuable asset to your team.
+
+I look forward to the opportunity to discuss how my skills and experience align with your needs.
+
+Best regards,
+Applicant`;
+  }
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
