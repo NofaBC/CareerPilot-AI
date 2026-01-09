@@ -2,6 +2,9 @@
 import { NextResponse } from 'next/server';
 import { getOpenAIClient, isOpenAIConfigured } from '@/lib/openai-client';
 
+// Force Node.js runtime for environment variable access
+export const runtime = 'nodejs';
+
 export async function POST(request: Request) {
   let resumeText = '';
   
@@ -9,61 +12,46 @@ export async function POST(request: Request) {
     const body = await request.json();
     resumeText = body.resumeText || '';
     
-    if (!resumeText) {
-      return NextResponse.json({
-        error: 'No resume text provided',
-        extractedData: fallbackExtract(resumeText)
-      });
-    }
+    console.log('📥 API received resume text length:', resumeText.length);
 
-    const client = getOpenAIClient();
-    
-    if (!client || !isOpenAIConfigured()) {
-      console.warn('⚠️ OpenRouter not configured - using fallback extraction');
+    if (!isOpenAIConfigured()) {
+      console.warn('⚠️ OpenRouter not configured - using fallback');
       return NextResponse.json({
         error: 'OpenRouter not configured',
         extractedData: fallbackExtract(resumeText)
       });
     }
 
+    const client = getOpenAIClient();
+    
+    console.log('🤖 Calling OpenAI API...');
+    
     const completion = await client.chat.completions.create({
-      model: "gpt-3.5-turbo", // Use GPT-3.5 for faster/cheaper testing first
+      model: "gpt-4o-mini", // Cheaper for testing
       messages: [
         {
           role: "system",
-          content: `You are a resume parsing AI. Extract structured data from resumes. Return ONLY a JSON object with these exact fields:
-{
-  "skills": ["skill1", "skill2"],
-  "experienceYears": number,
-  "jobTitles": ["title1", "title2"],
-  "industries": ["industry1"]
-}`
+          content: "Extract: skills[], experienceYears, jobTitles[], industries[]. Return JSON only."
         },
         {
           role: "user",
-          content: `Extract data from this resume:\n\n${resumeText}`
+          content: resumeText
         }
       ],
       temperature: 0.3,
-      max_tokens: 500,
+      max_tokens: 400,
     });
 
     const content = completion.choices[0]?.message?.content || '';
+    console.log('📤 Raw AI response:', content);
     
-    try {
-      const extractedData = JSON.parse(content);
-      console.log('✅ AI extracted data:', extractedData);
-      return NextResponse.json({ extractedData });
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
-      return NextResponse.json({
-        error: 'Invalid AI response format',
-        extractedData: fallbackExtract(resumeText)
-      });
-    }
+    const extractedData = JSON.parse(content);
+    console.log('✅ AI extracted data:', extractedData);
+    
+    return NextResponse.json({ extractedData });
     
   } catch (error) {
-    console.error('Profile extraction error:', error);
+    console.error('❌ Profile extraction error:', error);
     return NextResponse.json({
       error: 'Extraction failed',
       extractedData: fallbackExtract(resumeText)
@@ -71,6 +59,7 @@ export async function POST(request: Request) {
   }
 }
 
+// Fallback functions
 function fallbackExtract(resumeText: string) {
   const skills = ['retail', 'sales', 'management', 'p&l', 'inventory', 'javascript', 'react'];
   const extractedSkills = skills.filter(skill =>
@@ -79,23 +68,8 @@ function fallbackExtract(resumeText: string) {
   
   return {
     skills: extractedSkills,
-    experienceYears: extractYearsOfExperience(resumeText),
-    jobTitles: extractJobTitles(resumeText),
-    industries: extractIndustries(resumeText),
+    experienceYears: 3,
+    jobTitles: ['Manager'],
+    industries: ['Technology'],
   };
-}
-
-function extractYearsOfExperience(text: string): number {
-  const matches = text.match(/(\d+)\s*\+?\s*years?/i);
-  return matches ? parseInt(matches[1]) : 3;
-}
-
-function extractJobTitles(text: string): string[] {
-  const titles = ['Regional Director', 'Sales Manager', 'Full Stack Developer', 'Software Engineer'];
-  return titles.filter(title => text.toLowerCase().includes(title.toLowerCase()));
-}
-
-function extractIndustries(text: string): string[] {
-  return text.toLowerCase().includes('retail') ? ['Retail'] : 
-         text.toLowerCase().includes('healthcare') ? ['Healthcare'] : ['Technology'];
 }
