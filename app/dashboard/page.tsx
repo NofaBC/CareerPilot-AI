@@ -44,14 +44,15 @@ export default function DashboardPage() {
         orderBy('appliedAt', 'desc')
       );
       const snapshot = await getDocs(q);
-      const apps = snapshot.docs
+      
+      const apps = (snapshot.docs
         .map(doc => ({
           id: doc.id,
           ...doc.data(),
           appliedAt: doc.data().appliedAt?.toDate()
         }))
         .filter(app => app.appliedAt > new Date('2026-01-07')) // Hide old test data
-        as Application[];
+      ) as Application[]; // ✅ FIXED: Type assertion wrapped in parentheses
       
       setApplications(apps);
       setLoading(false);
@@ -131,7 +132,7 @@ export default function DashboardPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Profile Status */}
+          {/* Profile Status Card */}
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
             <h3 className="text-lg font-semibold mb-4 text-slate-900">Profile Status</h3>
             {hasProfile ? (
@@ -170,7 +171,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Application History - Only show if applications exist */}
+      {/* Application History Section - Only show if applications > 0 */}
       {applications.length > 0 && (
         <div className="mt-12">
           <div className="flex items-center justify-between mb-6">
@@ -233,7 +234,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Empty State - Show if profile exists but no applications */}
+      {/* Empty State for Applications - Only show if profile exists but no applications */}
       {applications.length === 0 && hasProfile && (
         <div className="mt-12 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">
           <FiBriefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
