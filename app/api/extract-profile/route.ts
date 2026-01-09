@@ -2,7 +2,6 @@
 import { NextResponse } from 'next/server';
 import { getOpenAIClient, isOpenAIConfigured } from '@/lib/openai-client';
 
-// Force Node.js runtime for environment variable access
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
@@ -24,10 +23,19 @@ export async function POST(request: Request) {
 
     const client = getOpenAIClient();
     
+    // ✅ FIXED: Explicit null check
+    if (!client) {
+      console.error('❌ OpenAI client is null - initialization failed');
+      return NextResponse.json({
+        error: 'OpenAI client failed to initialize',
+        extractedData: fallbackExtract(resumeText)
+      });
+    }
+
     console.log('🤖 Calling OpenAI API...');
     
     const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini", // Cheaper for testing
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
@@ -59,7 +67,7 @@ export async function POST(request: Request) {
   }
 }
 
-// Fallback functions
+// Fallback functions (same as before)
 function fallbackExtract(resumeText: string) {
   const skills = ['retail', 'sales', 'management', 'p&l', 'inventory', 'javascript', 'react'];
   const extractedSkills = skills.filter(skill =>
