@@ -7,7 +7,7 @@ import { firestore } from '@/lib/firebase';
 import { collection, query, where, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
 import JobMatchList from '@/components/JobMatchList';
 import Link from 'next/link';
-import { FiUser, FiBriefcase, FiClock, FiExternalLink, FiMapPin, FiAlertCircle } from 'react-icons/fi';
+import { FiUser, FiBriefcase, FiClock, FiExternalLink, FiMapPin, FiAlertCircle, FiZap } from 'react-icons/fi';
 
 interface Application {
   id: string;
@@ -37,18 +37,21 @@ export default function DashboardPage() {
       const profileSnap = await getDoc(profileRef);
       setHasProfile(profileSnap.exists());
 
-      // Fetch user's applications
+      // Fetch user's applications (filter out old test data from Jan 4-6)
       const q = query(
         collection(firestore, 'applications'),
         where('userId', '==', user.uid),
         orderBy('appliedAt', 'desc')
       );
       const snapshot = await getDocs(q);
-      const apps = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        appliedAt: doc.data().appliedAt?.toDate()
-      })) as Application[];
+      const apps = snapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          appliedAt: doc.data().appliedAt?.toDate()
+        }))
+        .filter(app => app.appliedAt > new Date('2026-01-07')) // Hide old test data
+        as Application[];
       
       setApplications(apps);
       setLoading(false);
@@ -115,7 +118,7 @@ export default function DashboardPage() {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* AI Job Matches - Takes 2/3 width */}
+        {/* AI Job Matches */}
         <div className="lg:col-span-2">
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
             <div className="flex items-center mb-4">
@@ -126,9 +129,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Sidebar - Profile Status & Stats */}
+        {/* Sidebar */}
         <div className="space-y-6">
-          {/* Profile Status Card */}
+          {/* Profile Status */}
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
             <h3 className="text-lg font-semibold mb-4 text-slate-900">Profile Status</h3>
             {hasProfile ? (
@@ -167,7 +170,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Application History Section - Only show if applications > 0 */}
+      {/* Application History - Only show if applications exist */}
       {applications.length > 0 && (
         <div className="mt-12">
           <div className="flex items-center justify-between mb-6">
@@ -192,6 +195,7 @@ export default function DashboardPage() {
                     <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
                       app.fitScore >= 80 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                     }`}>
+                      <FiZap className="w-3 h-3 mr-1 inline" />
                       {app.fitScore}% match
                     </span>
                   )}
@@ -229,7 +233,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Empty State for Applications - Only show if profile exists but no applications */}
+      {/* Empty State - Show if profile exists but no applications */}
       {applications.length === 0 && hasProfile && (
         <div className="mt-12 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">
           <FiBriefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
