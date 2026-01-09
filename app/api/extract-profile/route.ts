@@ -2,8 +2,10 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-// Force Node.js runtime
 export const runtime = 'nodejs';
+
+// TEMPORARY: Hardcode key to isolate Vercel env issue
+const HARDCODED_API_KEY = "sk-or-v1-dc545db75818e6a616b790e407f3e45a07d7714e1443bdee3330da4XXXXXXXX"; // Replace with your actual key
 
 export async function POST(request: Request) {
   let resumeText = '';
@@ -13,32 +15,29 @@ export async function POST(request: Request) {
     resumeText = body.resumeText || '';
     
     console.log('📥 API received resume. Length:', resumeText.length);
-    console.log('🔍 DIRECT ENV CHECK - process.env.OPENROUTER_API_KEY:', 
-      process.env.OPENROUTER_API_KEY ? `✅ EXISTS (${process.env.OPENROUTER_API_KEY.length} chars)` : '❌ UNDEFINED'
-    );
+    console.log('🔍 HARDCODED KEY CHECK:', HARDCODED_API_KEY ? '✅ EXISTS' : '❌ MISSING');
 
-    // CRITICAL: Direct access, no helper functions
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    
-    if (!apiKey) {
-      console.error('❌ DIRECT ENV ACCESS FAILED - API key undefined');
+    if (!HARDCODED_API_KEY) {
+      console.error('❌ Hardcoded key is missing');
       return NextResponse.json({
-        error: 'OpenRouter API key not configured',
+        error: 'API key missing',
         extractedData: fallbackExtract(resumeText)
       });
     }
 
-    console.log('✅ Direct env access successful, initializing client...');
+    console.log('✅ Using hardcoded key, initializing client...');
     
     const client = new OpenAI({
       baseURL: "https://openrouter.ai/api/v1",
-      apiKey: apiKey,
+      apiKey: HARDCODED_API_KEY,
       defaultHeaders: {
         "HTTP-Referer": "https://career-pilot-ai-delta.vercel.app",
         "X-Title": "CareerPilot AI",
       },
     });
 
+    console.log('🤖 Calling OpenAI API...');
+    
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
