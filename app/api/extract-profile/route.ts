@@ -1,7 +1,8 @@
 // app/api/extract-profile/route.ts
 import { NextResponse } from 'next/server';
-import { getOpenAIClient, isOpenAIConfigured } from '@/lib/openai-client';
+import OpenAI from 'openai';
 
+// Force Node.js runtime
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
@@ -11,29 +12,33 @@ export async function POST(request: Request) {
     const body = await request.json();
     resumeText = body.resumeText || '';
     
-    console.log('📥 API received resume text length:', resumeText.length);
+    console.log('📥 API received resume. Length:', resumeText.length);
+    console.log('🔍 DIRECT ENV CHECK - process.env.OPENROUTER_API_KEY:', 
+      process.env.OPENROUTER_API_KEY ? `✅ EXISTS (${process.env.OPENROUTER_API_KEY.length} chars)` : '❌ UNDEFINED'
+    );
 
-    if (!isOpenAIConfigured()) {
-      console.warn('⚠️ OpenRouter not configured - using fallback');
+    // CRITICAL: Direct access, no helper functions
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    
+    if (!apiKey) {
+      console.error('❌ DIRECT ENV ACCESS FAILED - API key undefined');
       return NextResponse.json({
-        error: 'OpenRouter not configured',
+        error: 'OpenRouter API key not configured',
         extractedData: fallbackExtract(resumeText)
       });
     }
 
-    const client = getOpenAIClient();
+    console.log('✅ Direct env access successful, initializing client...');
     
-    // ✅ FIXED: Explicit null check
-    if (!client) {
-      console.error('❌ OpenAI client is null - initialization failed');
-      return NextResponse.json({
-        error: 'OpenAI client failed to initialize',
-        extractedData: fallbackExtract(resumeText)
-      });
-    }
+    const client = new OpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
+      apiKey: apiKey,
+      defaultHeaders: {
+        "HTTP-Referer": "https://career-pilot-ai-delta.vercel.app",
+        "X-Title": "CareerPilot AI",
+      },
+    });
 
-    console.log('🤖 Calling OpenAI API...');
-    
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -67,7 +72,6 @@ export async function POST(request: Request) {
   }
 }
 
-// Fallback functions (same as before)
 function fallbackExtract(resumeText: string) {
   const skills = ['retail', 'sales', 'management', 'p&l', 'inventory', 'javascript', 'react'];
   const extractedSkills = skills.filter(skill =>
