@@ -1,31 +1,38 @@
 // app/lib/openai-client.ts
 import OpenAI from 'openai';
+import { getServerConfig } from './server-config';
 
 let client: OpenAI | null = null;
 
 export function getOpenAIClient(): OpenAI | null {
-  // Lazy initialization - only create client when explicitly called
   if (!client) {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    
-    if (!apiKey) {
-      console.warn('⚠️ OpenRouter API key not configured. Add OPENROUTER_API_KEY to Vercel environment variables.');
+    try {
+      const config = getServerConfig();
+      
+      console.log('✅ Initializing OpenAI client with key length:', config.OPENROUTER_API_KEY?.length);
+      
+      client = new OpenAI({
+        baseURL: "https://openrouter.ai/api/v1",
+        apiKey: config.OPENROUTER_API_KEY,
+        defaultHeaders: {
+          "HTTP-Referer": "https://career-pilot-ai-wine.vercel.app",
+          "X-Title": "CareerPilot AI",
+        },
+      });
+    } catch (error) {
+      console.error('❌ OpenAI client initialization failed:', error);
       return null;
     }
-
-    client = new OpenAI({
-      baseURL: "https://openrouter.ai/api/v1",
-      apiKey: apiKey,
-      defaultHeaders: {
-        "HTTP-Referer": "https://career-pilot-ai-five.vercel.app",
-        "X-Title": "CareerPilot AI",
-      },
-    });
   }
   
   return client;
 }
 
 export function isOpenAIConfigured(): boolean {
-  return !!process.env.OPENROUTER_API_KEY;
+  try {
+    const config = getServerConfig();
+    return !!config.OPENROUTER_API_KEY;
+  } catch {
+    return false;
+  }
 }
