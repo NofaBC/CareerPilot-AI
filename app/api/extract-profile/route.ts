@@ -1,10 +1,9 @@
-// app/api/extract-profile/route.ts - HARDCODED TEST
+// app/api/extract-profile/route.ts - HARDCODED TEST (FIXED)
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 export const runtime = 'nodejs';
 
-// HARDCODED API KEY - DO NOT COMMIT TO MAIN
 const HARDCODED_API_KEY = "sk-or-v1-dc545db75818e6a616b790e407f3e45a07d7714e1443bdee3330da4XXXXXXXX"; // Replace with your actual key
 
 export async function POST(request: Request) {
@@ -21,7 +20,7 @@ export async function POST(request: Request) {
       baseURL: "https://openrouter.ai/api/v1",
       apiKey: HARDCODED_API_KEY,
       defaultHeaders: {
-        "HTTP-Referer": "https://career-pilot-ai-xi.vercel.app",
+        "HTTP-Referer": "https://career-pilot-ai-lovat.vercel.app",
         "X-Title": "CareerPilot AI",
       },
     });
@@ -43,6 +42,8 @@ export async function POST(request: Request) {
     
   } catch (error) {
     console.error('❌ HARD CODED TEST FAILED:', error);
-    return NextResponse.json({ error: error.message });
+    // ✅ FIXED: Type guard for unknown error type
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return NextResponse.json({ error: errorMessage });
   }
 }
