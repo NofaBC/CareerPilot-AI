@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Briefcase, TrendingUp, Loader2, User, PlusCircle } from 'lucide-react';
-// FIXED: Changed db to firestore to match your firebase.ts
 import { auth, firestore } from '../lib/firebase'; 
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -27,14 +26,18 @@ export default function Dashboard() {
 
   const fetchUserProfile = async (uid: string) => {
     try {
-      // FIXED: Using firestore instead of db
       const docRef = doc(firestore, "users", uid); 
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
         const profileData = docSnap.data();
         setProfile(profileData);
-        findJobs(profileData);
+        // Only trigger search if we have the necessary data
+        if (profileData.targetRole || profileData.jobTitle) {
+          findJobs(profileData);
+        } else {
+          setIsLoading(false);
+        }
       } else {
         setProfile(null); 
         setIsLoading(false);
@@ -46,6 +49,7 @@ export default function Dashboard() {
   };
 
   const findJobs = async (userProfile: any) => {
+    if (isSearching) return;
     setIsSearching(true);
     try {
       const res = await fetch('/api/search-jobs', {
@@ -62,10 +66,19 @@ export default function Dashboard() {
           location: userProfile.location || "" 
         })
       });
+      
+      if (!res.ok) throw new Error("API Search Failed");
+      
       const data = await res.json();
-      if (data.success) setJobs(data.jobs);
+      // Safety: Ensure data.jobs is an array before setting state
+      if (data.success && Array.isArray(data.jobs)) {
+        setJobs(data.jobs);
+      } else {
+        setJobs([]);
+      }
     } catch (e) { 
       console.error("Search error:", e); 
+      setJobs([]);
     } finally { 
       setIsSearching(false); 
       setIsLoading(false);
@@ -140,26 +153,26 @@ export default function Dashboard() {
               <p className="mt-6 text-slate-600 font-bold text-lg">Scanning the market...</p>
               <p className="text-slate-400">Finding the best {profile.targetRole} roles in {profile.location}</p>
             </div>
-          ) : jobs.length > 0 ? (
+          ) : jobs && jobs.length > 0 ? (
             <div className="grid gap-5">
               {jobs.map((job, i) => (
-                <div key={i} className="bg-white p-7 rounded-3xl border border-slate-200 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/5 transition-all group">
+                <div key={job.job_id || i} className="bg-white p-7 rounded-3xl border border-slate-200 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/5 transition-all group">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
-                      <h3 className="font-bold text-xl text-slate-900 group-hover:text-blue-600 transition-colors">{job.job_title}</h3>
-                      <p className="text-blue-600 font-semibold text-lg">{job.company_name}</p>
+                      <h3 className="font-bold text-xl text-slate-900 group-hover:text-blue-600 transition-colors">{job.job_title || "Job Title"}</h3>
+                      <p className="text-blue-600 font-semibold text-lg">{job.company_name || "Company"}</p>
                     </div>
                     <div className="text-right">
                       <div className="px-4 py-1.5 bg-blue-600 text-white rounded-full font-bold text-sm shadow-md shadow-blue-200">
-                        {job.fitScore}% Match
+                        {job.fitScore || 0}% Match
                       </div>
                       <p className="text-[11px] text-slate-400 mt-2 uppercase font-bold tracking-widest flex items-center justify-end gap-1">
-                        <MapPin className="w-3 h-3" /> {job.job_city || job.location}
+                        <MapPin className="w-3 h-3" /> {job.job_city || job.location || "Remote"}
                       </p>
                     </div>
                   </div>
                   <div className="mt-5 bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                    <p className="text-slate-600 text-sm leading-relaxed font-medium italic">"{job.fitExplanation}"</p>
+                    <p className="text-slate-600 text-sm leading-relaxed font-medium italic">"{job.fitExplanation || "Analyzing fit..."}"</p>
                   </div>
                   <div className="mt-6 flex justify-end gap-3">
                     <button className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">View Details</button>
