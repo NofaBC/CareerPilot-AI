@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Briefcase, TrendingUp, Loader2, User, PlusCircle } from 'lucide-react';
-// FIXED: Using relative path for Firebase
-import { auth, db } from '../lib/firebase'; 
+// FIXED: Changed db to firestore to match your firebase.ts
+import { auth, firestore } from '../lib/firebase'; 
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -27,7 +27,8 @@ export default function Dashboard() {
 
   const fetchUserProfile = async (uid: string) => {
     try {
-      const docRef = doc(db, "users", uid); 
+      // FIXED: Using firestore instead of db
+      const docRef = doc(firestore, "users", uid); 
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
