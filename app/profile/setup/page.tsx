@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
-import { auth, db } from '@/app/lib/firebase';
+// FIXED: Using relative path for Firebase
+import { auth, db } from '../../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Loader2, CheckCircle } from 'lucide-react';
 
