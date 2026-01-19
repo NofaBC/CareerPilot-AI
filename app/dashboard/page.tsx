@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Briefcase, TrendingUp, Loader2, User, PlusCircle } from 'lucide-react';
-import { auth, db } from '@/app/lib/firebase'; 
+// FIXED: Using relative path for Firebase
+import { auth, db } from '../lib/firebase'; 
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -18,7 +19,6 @@ export default function Dashboard() {
         setUser(currentUser);
         await fetchUserProfile(currentUser.uid);
       } else {
-        // If not logged in, redirect to login page
         window.location.href = '/login'; 
       }
     });
@@ -27,21 +27,19 @@ export default function Dashboard() {
 
   const fetchUserProfile = async (uid: string) => {
     try {
-      // Accessing your "users" collection using the User UID
       const docRef = doc(db, "users", uid); 
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
         const profileData = docSnap.data();
         setProfile(profileData);
-        // Automatically trigger job search with their real data
         findJobs(profileData);
       } else {
         setProfile(null); 
         setIsLoading(false);
       }
     } catch (error) {
-      console.error("Error fetching profile from 'users' collection:", error);
+      console.error("Error fetching profile:", error);
       setIsLoading(false);
     }
   };
@@ -49,8 +47,6 @@ export default function Dashboard() {
   const findJobs = async (userProfile: any) => {
     setIsSearching(true);
     try {
-      // Map your Firestore fields to the API requirements
-      // Adjust these field names (e.g., 'skills', 'targetRole') if they differ in your DB
       const res = await fetch('/api/search-jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -66,9 +62,7 @@ export default function Dashboard() {
         })
       });
       const data = await res.json();
-      if (data.success) {
-        setJobs(data.jobs);
-      }
+      if (data.success) setJobs(data.jobs);
     } catch (e) { 
       console.error("Search error:", e); 
     } finally { 
@@ -80,15 +74,11 @@ export default function Dashboard() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center space-y-4">
-          <Loader2 className="animate-spin w-10 h-10 text-blue-600 mx-auto" />
-          <p className="text-slate-500 font-medium">Loading your career profile...</p>
-        </div>
+        <Loader2 className="animate-spin w-10 h-10 text-blue-600" />
       </div>
     );
   }
 
-  // If user exists but has no data in the "users" collection
   if (!profile) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
@@ -112,7 +102,6 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-6xl mx-auto space-y-8">
-        {/* Dynamic Profile Header */}
         <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
@@ -128,7 +117,6 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Job Matches Section */}
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
@@ -169,19 +157,12 @@ export default function Dashboard() {
                       </p>
                     </div>
                   </div>
-                  
                   <div className="mt-5 bg-slate-50 p-5 rounded-2xl border border-slate-100">
                     <p className="text-slate-600 text-sm leading-relaxed font-medium italic">"{job.fitExplanation}"</p>
                   </div>
-
-                  <div className="mt-6 flex justify-between items-center">
-                    <div className="flex gap-2">
-                       {/* Optional: Add small badges for matching skills here */}
-                    </div>
-                    <div className="flex gap-3">
-                      <button className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">View Details</button>
-                      <button className="px-7 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-blue-600 transition-all shadow-lg">Smart Apply</button>
-                    </div>
+                  <div className="mt-6 flex justify-end gap-3">
+                    <button className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">View Details</button>
+                    <button className="px-7 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-blue-600 transition-all shadow-lg">Smart Apply</button>
                   </div>
                 </div>
               ))}
@@ -191,12 +172,6 @@ export default function Dashboard() {
               <Search className="w-14 h-14 text-slate-200 mx-auto mb-4" />
               <p className="text-slate-500 font-bold text-xl">No matches found yet</p>
               <p className="text-slate-400 mt-2">Try updating your profile with more specific skills or locations.</p>
-              <button 
-                onClick={() => window.location.href = '/profile/edit'}
-                className="mt-6 px-6 py-2 text-blue-600 font-bold hover:underline"
-              >
-                Update My Profile
-              </button>
             </div>
           )}
         </div>
