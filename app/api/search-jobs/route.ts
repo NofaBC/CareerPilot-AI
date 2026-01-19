@@ -6,62 +6,93 @@ const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY;
 
 export async function POST(req: Request) {
   try {
-    const { profile, query, location } = await req.json();
-    let debugInfo: any = { jsearch: 'Not attempted', serpapi: 'Not attempted' };
+    // Safety Check 1: Ensure body exists
+    const body = await req.json().catch(() => null);
+    if (!body || !body.profile) {
+      return NextResponse.json({ success: false, message: "Missing profile in request body" }, { status: 400 });
+    }
 
-    // 1. Test JSearch
+    const { profile, query, location } = body;
+    
+    // Safety Check 2: Ensure profile fields exist
+    const safeProfile = {
+      skills: profile.skills || [],
+      experienceYears: profile.experienceYears || 0,
+      targetRoles: profile.targetRoles || ["Professional"],
+      locationPreference: profile.locationPreference || "Remote"
+    };
+
+    const searchQuery = query || safeProfile.targetRoles[0] || "Job";
+    const searchLocation = location || safeProfile.locationPreference || "";
+
+    console.log(`Searching for ${searchQuery} in ${searchLocation}`);
+
+    // 1. Fetch from JSearch
     let jsearchJobs = [];
     if (JSEARCH_API_KEY) {
       try {
-        const res = await fetch(`https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(query )}&location=${encodeURIComponent(location)}`, {
-          headers: { 'X-RapidAPI-Key': JSEARCH_API_KEY, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' }
+        const res = await fetch(`https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(searchQuery )}&location=${encodeURIComponent(searchLocation)}`, {
+          headers: { 
+            'X-RapidAPI-Key': JSEARCH_API_KEY, 
+            'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' 
+          },
+          next: { revalidate: 3600 } // Cache for 1 hour
         });
         const data = await res.json();
-        if (data.data) {
-          jsearchJobs = data.data;
-          debugInfo.jsearch = `Success: Found ${jsearchJobs.length} jobs`;
-        } else {
-          debugInfo.jsearch = `Error: ${data.message || 'Unknown JSearch error'}`;
-        }
-      } catch (e: any) { debugInfo.jsearch = `Fetch Failed: ${e.message}`; }
-    } else { debugInfo.jsearch = 'Missing JSEARCH_API_KEY'; }
+        jsearchJobs = data.data || [];
+      } catch (e) { console.error("JSearch Fetch Error:", e); }
+    }
 
-    // 2. Test SerpAPI
+    // 2. Fetch from SerpAPI
     let serpapiJobs = [];
     if (SERPAPI_API_KEY) {
       try {
-        const res = await fetch(`https://serpapi.com/search?engine=google_jobs&q=${encodeURIComponent(query )}&location=${encodeURIComponent(location)}&api_key=${SERPAPI_API_KEY}`);
+        const res = await fetch(`https://serpapi.com/search?engine=google_jobs&q=${encodeURIComponent(searchQuery )}&location=${encodeURIComponent(searchLocation)}&api_key=${SERPAPI_API_KEY}`, {
+          next: { revalidate: 3600 }
+        });
         const data = await res.json();
         if (data.jobs_results) {
           serpapiJobs = data.jobs_results.map((j: any) => ({
-            job_id: j.job_id, job_title: j.title, company_name: j.company_name, job_description: j.description, job_city: j.location
+            job_id: j.job_id,
+            job_title: j.title,
+            company_name: j.company_name,
+            job_description: j.description,
+            job_city: j.location,
           }));
-          debugInfo.serpapi = `Success: Found ${serpapiJobs.length} jobs`;
-        } else {
-          debugInfo.serpapi = `Error: ${data.error || 'Unknown SerpAPI error'}`;
         }
-      } catch (e: any) { debugInfo.serpapi = `Fetch Failed: ${e.message}`; }
-    } else { debugInfo.serpapi = 'Missing SERPAPI_API_KEY'; }
-
-    // 3. Combine & Score
-    const rawJobs = [...jsearchJobs, ...serpapiJobs];
-    
-    // If NO jobs found, return the debug info so we can see why
-    if (rawJobs.length === 0) {
-      return NextResponse.json({ success: false, message: "No jobs found", debug: debugInfo });
+      } catch (e) { console.error("SerpAPI Fetch Error:", e); }
     }
 
+    const rawJobs = [...jsearchJobs, ...serpapiJobs];
+
+    // 3. Score Jobs
     const scoredJobs = rawJobs.map((job: any) => {
       const posting: JobPosting = {
-        id: job.job_id, title: job.job_title, description: job.job_description,
-        requiredSkills: profile.skills || [], location: job.job_city || job.location
+        id: job.job_id || Math.random().toString(),
+        title: job.job_title || "Unknown Title",
+        description: job.job_description || "",
+        requiredSkills: [], // We can enhance this later
+        location: job.job_city || job.location || "Remote"
       };
-      const fit = ScoringService.calculateFitScore(profile, posting);
-      return { ...job, fitScore: fit.score, fitExplanation: fit.explanation };
+      const fit = ScoringService.calculateFitScore(safeProfile, posting);
+      return {
+        ...job,
+        fitScore: fit.score,
+        fitExplanation: fit.explanation
+      };
     });
 
-    return NextResponse.json({ success: true, jobs: scoredJobs.sort((a, b) => b.fitScore - a.fitScore) });
+    return NextResponse.json({ 
+      success: true, 
+      jobs: scoredJobs.sort((a, b) => b.fitScore - a.fitScore).slice(0, 20) 
+    });
+
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error("CRITICAL API ERROR:", error);
+    return NextResponse.json({ 
+      success: false, 
+      message: "Internal Server Error", 
+      error: error.message 
+    }, { status: 500 });
   }
 }
