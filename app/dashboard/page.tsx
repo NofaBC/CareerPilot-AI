@@ -1,66 +1,203 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Briefcase, TrendingUp, Loader2, User } from 'lucide-react';
+import { Search, MapPin, Briefcase, TrendingUp, Loader2, User, PlusCircle } from 'lucide-react';
+import { auth, db } from '@/app/lib/firebase'; 
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function Dashboard() {
-  const [profile] = useState({
-    name: "Head Nurse",
-    location: "Chicago, IL",
-    skills: ["staff supervision", "acute care", "leadership"],
-    experience: "12+ years"
-  });
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [jobs, setJobs] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const findJobs = async () => {
-    setIsLoading(true);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        await fetchUserProfile(currentUser.uid);
+      } else {
+        // If not logged in, redirect to login page
+        window.location.href = '/login'; 
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const fetchUserProfile = async (uid: string) => {
     try {
-      const res = await fetch('/api/search-jobs', {
-        method: 'POST',
-        body: JSON.stringify({ profile, query: "Head Nurse", location: "Chicago, IL" })
-      });
-      const data = await res.json();
-      if (data.success) setJobs(data.jobs);
-    } catch (e) { console.error(e); }
-    finally { setIsLoading(false); }
+      // Accessing your "users" collection using the User UID
+      const docRef = doc(db, "users", uid); 
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        const profileData = docSnap.data();
+        setProfile(profileData);
+        // Automatically trigger job search with their real data
+        findJobs(profileData);
+      } else {
+        setProfile(null); 
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error("Error fetching profile from 'users' collection:", error);
+      setIsLoading(false);
+    }
   };
 
-  useEffect(() => { findJobs(); }, []);
+  const findJobs = async (userProfile: any) => {
+    setIsSearching(true);
+    try {
+      // Map your Firestore fields to the API requirements
+      // Adjust these field names (e.g., 'skills', 'targetRole') if they differ in your DB
+      const res = await fetch('/api/search-jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          profile: {
+            skills: userProfile.skills || [],
+            experienceYears: userProfile.experienceYears || 5,
+            targetRoles: [userProfile.targetRole || userProfile.jobTitle || "Professional"],
+            locationPreference: userProfile.location || "Remote"
+          }, 
+          query: userProfile.targetRole || userProfile.jobTitle || "Job", 
+          location: userProfile.location || "" 
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setJobs(data.jobs);
+      }
+    } catch (e) { 
+      console.error("Search error:", e); 
+    } finally { 
+      setIsSearching(false); 
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center space-y-4">
+          <Loader2 className="animate-spin w-10 h-10 text-blue-600 mx-auto" />
+          <p className="text-slate-500 font-medium">Loading your career profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user exists but has no data in the "users" collection
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
+        <div className="max-w-md w-full bg-white p-10 rounded-3xl border border-slate-200 shadow-xl text-center space-y-6">
+          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+            <PlusCircle className="w-10 h-10 text-blue-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">Welcome to CareerPilot</h1>
+          <p className="text-slate-500">We couldn't find your career profile. Let's set it up to start your 60-90 day job search campaign.</p>
+          <button 
+            onClick={() => window.location.href = '/profile/setup'} 
+            className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+          >
+            Create My Profile
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-6xl mx-auto space-y-8">
-        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-6">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white"><User /></div>
-          <div>
-            <h1 className="text-2xl font-bold">{profile.name}</h1>
-            <p className="text-slate-500">{profile.location} • {profile.experience}</p>
+        {/* Dynamic Profile Header */}
+        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+              <User />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">{profile.targetRole || profile.jobTitle || "Your Profile"}</h1>
+              <p className="text-slate-500 font-medium">{profile.location || "Location not set"} • {profile.experienceYears || "5+"} Years Experience</p>
+            </div>
           </div>
+          <button onClick={() => window.location.href = '/profile/edit'} className="px-5 py-2.5 text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all">
+            Edit Profile
+          </button>
         </div>
 
-        <div className="space-y-4">
+        {/* Job Matches Section */}
+        <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold">AI Job Matches (Live)</h2>
-            <button onClick={findJobs} className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold">Refresh</button>
+            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              AI Job Matches
+              <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] rounded-md uppercase tracking-wider font-bold">Live Results</span>
+            </h2>
+            <button 
+              onClick={() => findJobs(profile)} 
+              disabled={isSearching}
+              className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm disabled:opacity-50"
+            >
+              {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              Refresh Matches
+            </button>
           </div>
 
-          {isLoading ? (
-            <div className="py-20 text-center"><Loader2 className="animate-spin mx-auto w-10 h-10 text-blue-600" /><p className="mt-4 text-slate-500">Searching Chicago for Nursing roles...</p></div>
+          {isSearching ? (
+            <div className="py-24 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
+              <Loader2 className="animate-spin mx-auto w-12 h-12 text-blue-600" />
+              <p className="mt-6 text-slate-600 font-bold text-lg">Scanning the market...</p>
+              <p className="text-slate-400">Finding the best {profile.targetRole} roles in {profile.location}</p>
+            </div>
           ) : jobs.length > 0 ? (
-            <div className="grid gap-4">
+            <div className="grid gap-5">
               {jobs.map((job, i) => (
-                <div key={i} className="bg-white p-6 rounded-3xl border border-slate-200">
-                  <div className="flex justify-between">
-                    <h3 className="font-bold text-lg">{job.job_title}</h3>
-                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full font-bold">{job.fitScore}% Match</span>
+                <div key={i} className="bg-white p-7 rounded-3xl border border-slate-200 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/5 transition-all group">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-xl text-slate-900 group-hover:text-blue-600 transition-colors">{job.job_title}</h3>
+                      <p className="text-blue-600 font-semibold text-lg">{job.company_name}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="px-4 py-1.5 bg-blue-600 text-white rounded-full font-bold text-sm shadow-md shadow-blue-200">
+                        {job.fitScore}% Match
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-2 uppercase font-bold tracking-widest flex items-center justify-end gap-1">
+                        <MapPin className="w-3 h-3" /> {job.job_city || job.location}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-blue-600 font-medium">{job.company_name}</p>
-                  <p className="text-slate-500 text-sm mt-2">{job.fitExplanation}</p>
+                  
+                  <div className="mt-5 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                    <p className="text-slate-600 text-sm leading-relaxed font-medium italic">"{job.fitExplanation}"</p>
+                  </div>
+
+                  <div className="mt-6 flex justify-between items-center">
+                    <div className="flex gap-2">
+                       {/* Optional: Add small badges for matching skills here */}
+                    </div>
+                    <div className="flex gap-3">
+                      <button className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">View Details</button>
+                      <button className="px-7 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-blue-600 transition-all shadow-lg">Smart Apply</button>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="py-20 text-center border-2 border-dashed rounded-3xl"><p className="text-slate-400">No jobs found yet. Check your API keys.</p></div>
+            <div className="py-24 text-center border-2 border-dashed border-slate-200 rounded-3xl bg-white">
+              <Search className="w-14 h-14 text-slate-200 mx-auto mb-4" />
+              <p className="text-slate-500 font-bold text-xl">No matches found yet</p>
+              <p className="text-slate-400 mt-2">Try updating your profile with more specific skills or locations.</p>
+              <button 
+                onClick={() => window.location.href = '/profile/edit'}
+                className="mt-6 px-6 py-2 text-blue-600 font-bold hover:underline"
+              >
+                Update My Profile
+              </button>
+            </div>
           )}
         </div>
       </div>
