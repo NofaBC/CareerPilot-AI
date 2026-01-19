@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { ScoringService, JobPosting } from '@/app/lib/scoring-service';
+// This relative path fix is what will solve the Vercel build error
+import { ScoringService, JobPosting } from '../../lib/scoring-service';
 
 const JSEARCH_API_KEY = process.env.JSEARCH_API_KEY;
 const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY;
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
         id: job.job_id,
         title: job.job_title,
         description: job.job_description,
-        requiredSkills: ['nursing', 'leadership', 'acute care'], // Simplified for POC
+        requiredSkills: ['nursing', 'leadership', 'acute care'], 
         location: job.job_city || job.location
       };
       const fit = ScoringService.calculateFitScore(profile, posting);
