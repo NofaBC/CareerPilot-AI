@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
-// FIXED: Using relative path for Firebase
-import { auth, db } from '../../lib/firebase';
+// FIXED: Changed db to firestore to match your firebase.ts
+import { auth, firestore } from '../../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Loader2, CheckCircle } from 'lucide-react';
 
@@ -21,7 +21,8 @@ export default function ProfileSetup() {
     
     setIsSaving(true);
     try {
-      await setDoc(doc(db, "users", auth.currentUser.uid), {
+      // FIXED: Using firestore instead of db
+      await setDoc(doc(firestore, "users", auth.currentUser.uid), {
         targetRole: formData.targetRole,
         location: formData.location,
         experienceYears: parseInt(formData.experienceYears),
