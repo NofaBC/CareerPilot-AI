@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 export async function POST(req: Request) {
   try {
-    const { jobTitle, employer, jobDescription, userProfile, resumeSummary } = await req.json();
+    const body = await req.json();
+    const { jobTitle, employer, jobDescription, userProfile, resumeSummary } = body;
 
     if (!OPENROUTER_API_KEY) {
       return NextResponse.json({ 
@@ -20,14 +23,14 @@ export async function POST(req: Request) {
       Job Description: ${jobDescription}
 
       Candidate Profile:
-      Target Role: ${userProfile.targetRole}
-      Experience: ${userProfile.experienceYears} years
-      Skills: ${userProfile.skills.join(', ')}
-      Resume Summary: ${resumeSummary}
+      Target Role: ${userProfile?.targetRole || 'Professional'}
+      Experience: ${userProfile?.experienceYears || '8+'} years
+      Skills: ${userProfile?.skills?.join(', ') || ''}
+      Resume Summary: ${resumeSummary || ''}
 
       Instructions:
       - Keep it to 3 concise paragraphs.
-      - Focus on how the candidate's specific experience in ${userProfile.skills.slice(0,3).join(', ')} solves the company's problems.
+      - Focus on how the candidate's specific experience solves the company's problems.
       - Maintain a confident, professional, and enthusiastic tone.
       - Do not use placeholders like [Date] or [Address]. Start directly with "Dear Hiring Team at ${employer},".
     `;
@@ -41,16 +44,22 @@ export async function POST(req: Request) {
         "X-Title": "CareerPilot AI"
       },
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini", // Using a fast, reliable model for cover letters
+        model: "openai/gpt-4o-mini",
         messages: [{ role: "user", content: prompt }]
       })
     });
 
     const data = await response.json();
+    
+    if (!data.choices || data.choices.length === 0) {
+      throw new Error(data.error?.message || "Failed to generate cover letter");
+    }
+
     const coverLetter = data.choices[0].message.content;
 
     return NextResponse.json({ success: true, coverLetter });
   } catch (error: any) {
+    console.error("Cover Letter Error:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
@@ -58,3 +67,4 @@ export async function POST(req: Request) {
 
 live
 
+Jum
