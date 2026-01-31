@@ -2,27 +2,37 @@
 
 import React, { useState, useEffect } from 'react';
 import { auth, firestore } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 
   Search, MapPin, Briefcase, Star, TrendingUp, Settings, 
   LogOut, Loader2, User, RefreshCw, ExternalLink, 
-  CheckCircle2, AlertCircle 
+  CheckCircle2, AlertCircle, Zap, X, Calendar, Clock, FileText
 } from 'lucide-react';
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [resume, setResume] = useState<any>(null);
   const [jobs, setJobs] = useState<any[]>([]);
+  const [stats, setStats] = useState({ sent: 0, response: 0, interview: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [debug, setDebug] = useState<any>(null);
+
+  // Smart Apply Modal State
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [isGeneratingCL, setIsGeneratingCL] = useState(false);
+  const [coverLetter, setCoverLetter] = useState("");
+  const [availability, setAvailability] = useState("Mon-Fri, 9am-5pm");
+  const [isApplying, setIsApplying] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
         await fetchProfile(currentUser.uid);
+        await fetchStats(currentUser.uid);
       } else {
         window.location.href = '/login';
       }
@@ -37,6 +47,11 @@ export default function Dashboard() {
       if (docSnap.exists()) {
         const profileData = docSnap.data();
         setProfile(profileData);
+        
+        // Also fetch resume for cover letter generation
+        const resumeSnap = await getDoc(doc(firestore, "resumes", uid));
+        if (resumeSnap.exists()) setResume(resumeSnap.data());
+        
         findJobs(profileData);
       } else {
         window.location.href = '/profile/setup';
@@ -45,6 +60,19 @@ export default function Dashboard() {
       console.error("Error fetching profile:", error);
       setIsLoading(false);
     }
+  };
+
+  const fetchStats = async (uid: string) => {
+    try {
+      const q = query(collection(firestore, "applications"), where("userId", "==", uid));
+      const querySnapshot = await getDocs(q);
+      const apps = querySnapshot.docs.map(doc => doc.data());
+      setStats({
+        sent: apps.length,
+        response: apps.filter(a => a.status === 'viewed' || a.status === 'interview').length,
+        interview: apps.filter(a => a.status === 'interview').length
+      });
+    } catch (e) { console.error(e); }
   };
 
   const findJobs = async (userProfile: any) => {
@@ -75,6 +103,54 @@ export default function Dashboard() {
     }
   };
 
+  const handleSmartApply = async (job: any) => {
+    setSelectedJob(job);
+    setIsGeneratingCL(true);
+    try {
+      const res = await fetch('/api/generate-cover-letter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobTitle: job.job_title,
+          employer: job.employer_name,
+          jobDescription: job.job_description || job.job_title,
+          userProfile: profile,
+          resumeSummary: resume?.summary || ""
+        })
+      });
+      const data = await res.json();
+      if (data.success) setCoverLetter(data.coverLetter);
+    } catch (e) { console.error(e); }
+    finally { setIsGeneratingCL(false); }
+  };
+
+  const confirmApplication = async () => {
+    if (!user || !selectedJob) return;
+    setIsApplying(true);
+    try {
+      await addDoc(collection(firestore, "applications"), {
+        userId: user.uid,
+        jobId: selectedJob.job_id || Math.random().toString(36),
+        jobTitle: selectedJob.job_title,
+        employer: selectedJob.employer_name,
+        status: 'sent',
+        coverLetter,
+        availability,
+        appliedAt: new Date().toISOString()
+      });
+      
+      // Update local stats
+      setStats(prev => ({ ...prev, sent: prev.sent + 1 }));
+      
+      // Open the actual apply link in a new tab
+      window.open(selectedJob.job_apply_link, '_blank');
+      
+      setSelectedJob(null);
+      setCoverLetter("");
+    } catch (e) { alert("Error saving application"); }
+    finally { setIsApplying(false); }
+  };
+
   const handleLogout = () => auth.signOut().then(() => window.location.href = '/');
 
   if (isLoading) {
@@ -90,6 +166,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
+      {/* Sidebar */}
       <aside className="w-72 bg-white border-r border-slate-200 p-8 flex flex-col fixed h-full">
         <div className="flex items-center gap-3 mb-12">
           <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
@@ -97,17 +174,19 @@ export default function Dashboard() {
           </div>
           <span className="font-black text-xl tracking-tight">CareerPilot<span className="text-blue-600">AI</span></span>
         </div>
+
         <nav className="space-y-2 flex-1">
           <button className="w-full flex items-center gap-3 p-4 bg-blue-50 text-blue-600 rounded-2xl font-bold transition-all">
             <Search className="w-5 h-5" /> Job Matches
           </button>
+          <button onClick={() => window.location.href = '/dashboard/resume'} className="w-full flex items-center gap-3 p-4 text-slate-500 hover:bg-slate-50 rounded-2xl font-bold transition-all">
+            <FileText className="w-5 h-5" /> Master Resume
+          </button>
           <button onClick={() => window.location.href = '/dashboard/interview'} className="w-full flex items-center gap-3 p-4 text-slate-500 hover:bg-slate-50 rounded-2xl font-bold transition-all">
             <Star className="w-5 h-5" /> Interview Coach
           </button>
-          <button className="w-full flex items-center gap-3 p-4 text-slate-500 hover:bg-slate-50 rounded-2xl font-bold transition-all">
-            <Briefcase className="w-5 h-5" /> Applications
-          </button>
         </nav>
+
         <div className="pt-8 border-t border-slate-100 space-y-2">
           <button onClick={() => window.location.href = '/profile/edit'} className="w-full flex items-center gap-3 p-4 text-slate-500 hover:bg-slate-50 rounded-2xl font-bold transition-all">
             <Settings className="w-5 h-5" /> Settings
@@ -118,30 +197,44 @@ export default function Dashboard() {
         </div>
       </aside>
 
+      {/* Main Content */}
       <main className="flex-1 ml-72 p-12">
         <header className="flex justify-between items-end mb-12">
           <div>
             <h1 className="text-4xl font-black text-slate-900 mb-2">Campaign Dashboard</h1>
             <p className="text-slate-500 font-medium">Welcome back, {user?.displayName || 'Candidate'}</p>
           </div>
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-              <CheckCircle2 className="text-green-600 w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Campaign Status</p>
-              <p className="font-bold text-green-600 text-lg">Active</p>
+          
+          {/* Campaign Stats */}
+          <div className="flex gap-4">
+            <div className="bg-white p-4 px-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div className="text-center">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sent</p>
+                <p className="font-black text-slate-900 text-xl">{stats.sent}</p>
+              </div>
+              <div className="w-px h-8 bg-slate-100"></div>
+              <div className="text-center">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Response</p>
+                <p className="font-black text-blue-600 text-xl">{Math.round((stats.response / (stats.sent || 1)) * 100)}%</p>
+              </div>
+              <div className="w-px h-8 bg-slate-100"></div>
+              <div className="text-center">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Interviews</p>
+                <p className="font-black text-green-600 text-xl">{stats.interview}</p>
+              </div>
             </div>
           </div>
         </header>
 
         <div className="grid grid-cols-3 gap-8">
+          {/* Left Column: Profile Summary */}
           <div className="col-span-1 space-y-8">
             <section className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="font-bold text-xl">Target Profile</h2>
                 <button onClick={() => window.location.href = '/profile/edit'} className="text-blue-600 font-bold text-sm hover:underline">Edit Profile</button>
               </div>
+              
               <div className="space-y-4">
                 <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
                   <Briefcase className="text-blue-600 w-5 h-5" />
@@ -158,6 +251,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+
               <div className="pt-4">
                 <p className="text-xs font-bold text-slate-400 uppercase mb-3">Key Skills</p>
                 <div className="flex flex-wrap gap-2">
@@ -169,11 +263,16 @@ export default function Dashboard() {
             </section>
           </div>
 
+          {/* Right Column: Job Matches */}
           <div className="col-span-2 space-y-8">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold flex items-center gap-3">AI Job Matches <span className="px-3 py-1 bg-blue-600 text-white text-xs rounded-full">Live Results</span></h2>
+              <h2 className="text-2xl font-bold flex items-center gap-3">
+                AI Job Matches
+                <span className="px-3 py-1 bg-blue-600 text-white text-xs rounded-full">Live Results</span>
+              </h2>
               <button onClick={() => findJobs(profile)} disabled={isSearching} className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl font-bold text-slate-600 hover:bg-slate-50 transition-all disabled:opacity-50">
-                {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Refresh Matches
+                {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                Refresh Matches
               </button>
             </div>
 
@@ -200,8 +299,13 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
-                    <div className="mt-6 pt-6 border-t border-slate-50 flex justify-end">
-                      <a href={job.job_apply_link} target="_blank" className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-blue-600 transition-all">Apply Now <ExternalLink className="w-4 h-4" /></a>
+                    <div className="mt-6 pt-6 border-t border-slate-50 flex justify-end gap-3">
+                      <button 
+                        onClick={() => handleSmartApply(job)}
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+                      >
+                        <Zap className="w-4 h-4 fill-current" /> Smart Apply
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -212,11 +316,7 @@ export default function Dashboard() {
                 <p className="text-slate-500 font-bold text-xl">No matches found yet</p>
                 {debug && (
                   <div className="max-w-md mx-auto mt-8 p-6 bg-slate-900 rounded-2xl text-left font-mono text-xs space-y-3">
-                    <div className="flex items-center gap-2 text-blue-400 border-b border-slate-800 pb-2 mb-2">
-                      <AlertCircle className="w-4 h-4" /> <span className="font-bold uppercase tracking-widest">API Diagnostic Logs</span>
-                    </div>
-                    <p className={debug.jsearch.includes('Success') ? 'text-green-400' : 'text-red-400'}>JSearch: {debug.jsearch}</p>
-                    <p className={debug.serpapi.includes('Success') ? 'text-green-400' : 'text-red-400'}>SerpAPI: {debug.serpapi}</p>
+                    <p className="text-red-400">JSearch: {debug.jsearch}</p>
                   </div>
                 )}
               </div>
@@ -224,6 +324,32 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
-    </div>
-  );
-}
+
+      {/* Smart Apply Modal */}
+      {selectedJob && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900">Smart Apply</h2>
+                <p className="text-slate-500 font-medium">Tailoring application for <span className="text-blue-600">{selectedJob.employer_name}</span></p>
+              </div>
+              <button onClick={() => setSelectedJob(null)} className="p-2 hover:bg-white rounded-full transition-all">
+                <X className="w-6 h-6 text-slate-400" />
+              </button>
+            </div>
+            
+            <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+              {/* Cover Letter Section */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-blue-600" /> AI Tailored Cover Letter
+                  </h3>
+                  {isGeneratingCL && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
+                </div>
+                <textarea 
+                  className="w-full h-64 p-6 bg-slate-50 border border-slate-200 rounded-2xl text-sm leading-relaxed text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
+                  value={coverLetter}
+                  onChange
+(Content truncated due to size limit. Use line ranges to read remaining content)
