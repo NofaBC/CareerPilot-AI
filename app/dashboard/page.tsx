@@ -2,12 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { auth, firestore } from '../lib/firebase';
-import { doc, getDoc, setDoc, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 
   Search, MapPin, Briefcase, Star, TrendingUp, Settings, 
-  LogOut, Loader2, User, RefreshCw, ExternalLink, 
-  CheckCircle2, AlertCircle, Zap, X, Calendar, Clock, FileText
+  LogOut, Loader2, RefreshCw, CheckCircle2, Zap, X, Calendar, Clock, FileText, Sparkles
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -48,7 +47,6 @@ export default function Dashboard() {
         const profileData = docSnap.data();
         setProfile(profileData);
         
-        // Also fetch resume for cover letter generation
         const resumeSnap = await getDoc(doc(firestore, "resumes", uid));
         if (resumeSnap.exists()) setResume(resumeSnap.data());
         
@@ -139,12 +137,8 @@ export default function Dashboard() {
         appliedAt: new Date().toISOString()
       });
       
-      // Update local stats
       setStats(prev => ({ ...prev, sent: prev.sent + 1 }));
-      
-      // Open the actual apply link in a new tab
       window.open(selectedJob.job_apply_link, '_blank');
-      
       setSelectedJob(null);
       setCoverLetter("");
     } catch (e) { alert("Error saving application"); }
@@ -176,22 +170,22 @@ export default function Dashboard() {
         </div>
 
         <nav className="space-y-2 flex-1">
-          <button className="w-full flex items-center gap-3 p-4 bg-blue-50 text-blue-600 rounded-2xl font-bold transition-all">
+          <button className="w-full flex items-center gap-3 p-4 bg-blue-50 text-blue-600 rounded-2xl font-bold transition-all text-left">
             <Search className="w-5 h-5" /> Job Matches
           </button>
-          <button onClick={() => window.location.href = '/dashboard/resume'} className="w-full flex items-center gap-3 p-4 text-slate-500 hover:bg-slate-50 rounded-2xl font-bold transition-all">
+          <button onClick={() => window.location.href = '/dashboard/resume'} className="w-full flex items-center gap-3 p-4 text-slate-500 hover:bg-slate-50 rounded-2xl font-bold transition-all text-left">
             <FileText className="w-5 h-5" /> Master Resume
           </button>
-          <button onClick={() => window.location.href = '/dashboard/interview'} className="w-full flex items-center gap-3 p-4 text-slate-500 hover:bg-slate-50 rounded-2xl font-bold transition-all">
+          <button onClick={() => window.location.href = '/dashboard/interview'} className="w-full flex items-center gap-3 p-4 text-slate-500 hover:bg-slate-50 rounded-2xl font-bold transition-all text-left">
             <Star className="w-5 h-5" /> Interview Coach
           </button>
         </nav>
 
         <div className="pt-8 border-t border-slate-100 space-y-2">
-          <button onClick={() => window.location.href = '/profile/edit'} className="w-full flex items-center gap-3 p-4 text-slate-500 hover:bg-slate-50 rounded-2xl font-bold transition-all">
+          <button onClick={() => window.location.href = '/profile/edit'} className="w-full flex items-center gap-3 p-4 text-slate-500 hover:bg-slate-50 rounded-2xl font-bold transition-all text-left">
             <Settings className="w-5 h-5" /> Settings
           </button>
-          <button onClick={handleLogout} className="w-full flex items-center gap-3 p-4 text-red-500 hover:bg-red-50 rounded-2xl font-bold transition-all">
+          <button onClick={handleLogout} className="w-full flex items-center gap-3 p-4 text-red-500 hover:bg-red-50 rounded-2xl font-bold transition-all text-left">
             <LogOut className="w-5 h-5" /> Logout
           </button>
         </div>
@@ -205,7 +199,6 @@ export default function Dashboard() {
             <p className="text-slate-500 font-medium">Welcome back, {user?.displayName || 'Candidate'}</p>
           </div>
           
-          {/* Campaign Stats */}
           <div className="flex gap-4">
             <div className="bg-white p-4 px-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
               <div className="text-center">
@@ -227,7 +220,6 @@ export default function Dashboard() {
         </header>
 
         <div className="grid grid-cols-3 gap-8">
-          {/* Left Column: Profile Summary */}
           <div className="col-span-1 space-y-8">
             <section className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
               <div className="flex justify-between items-center">
@@ -263,7 +255,6 @@ export default function Dashboard() {
             </section>
           </div>
 
-          {/* Right Column: Job Matches */}
           <div className="col-span-2 space-y-8">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold flex items-center gap-3">
@@ -340,7 +331,6 @@ export default function Dashboard() {
             </div>
             
             <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
-              {/* Cover Letter Section */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="font-bold text-slate-900 flex items-center gap-2">
@@ -351,5 +341,14 @@ export default function Dashboard() {
                 <textarea 
                   className="w-full h-64 p-6 bg-slate-50 border border-slate-200 rounded-2xl text-sm leading-relaxed text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
                   value={coverLetter}
-                  onChange
+                  onChange={(e) => setCoverLetter(e.target.value)}
+                  placeholder="Generating your custom cover letter..."
+                />
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                  <Cal
 (Content truncated due to size limit. Use line ranges to read remaining content)
+
+
