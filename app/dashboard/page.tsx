@@ -23,6 +23,16 @@ import {
   Sparkles 
 } from 'lucide-react';
 
+// Sub-component for Loading State to prevent compiler confusion
+const LoadingScreen = () => (
+  <div className="min-h-screen flex items-center justify-center bg-slate-50">
+    <div className="text-center space-y-4">
+      <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto" />
+      <p className="text-slate-500 font-medium">Loading your campaign...</p>
+    </div>
+  </div>
+);
+
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -161,16 +171,7 @@ export default function Dashboard() {
 
   const handleLogout = () => auth.signOut().then(() => window.location.href = '/');
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto" />
-          <p className="text-slate-500 font-medium">Loading your campaign...</p>
-        </div>
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingScreen />;
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -360,8 +361,5 @@ export default function Dashboard() {
                 />
               </div>
 
-              <div className="space-y-4">
-                <h3 className="font-bold text-slate-900 flex 
+              <div className
 (Content truncated due to size limit. Use line ranges to read remaining content)
-
-
