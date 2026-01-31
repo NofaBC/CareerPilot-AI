@@ -5,8 +5,22 @@ import { auth, firestore } from '../lib/firebase';
 import { doc, getDoc, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { 
-  Search, MapPin, Briefcase, Star, TrendingUp, Settings, 
-  LogOut, Loader2, RefreshCw, CheckCircle2, Zap, X, Calendar, Clock, FileText, Sparkles
+  Search, 
+  MapPin, 
+  Briefcase, 
+  Star, 
+  TrendingUp, 
+  Settings, 
+  LogOut, 
+  Loader2, 
+  RefreshCw, 
+  CheckCircle2, 
+  Zap, 
+  X, 
+  Calendar, 
+  Clock, 
+  FileText, 
+  Sparkles 
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -347,8 +361,7 @@ export default function Dashboard() {
               </div>
 
               <div className="space-y-4">
-                <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                  <Cal
+                <h3 className="font-bold text-slate-900 flex 
 (Content truncated due to size limit. Use line ranges to read remaining content)
 
 
