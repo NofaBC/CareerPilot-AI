@@ -41,9 +41,7 @@ export default function Dashboard() {
             });
             const data = await res.json();
             if (data.success) setJobs(data.jobs || []);
-          } else {
-            window.location.href = '/profile/setup';
-          }
+          } else { window.location.href = '/profile/setup'; }
           const q = query(collection(firestore, "applications"), where("userId", "==", currentUser.uid));
           const qSnap = await getDocs(q);
           const apps = qSnap.docs.map(d => d.data());
@@ -54,9 +52,7 @@ export default function Dashboard() {
           });
         } catch (e) { console.error(e); }
         finally { setIsLoading(false); }
-      } else {
-        window.location.href = '/login';
-      }
+      } else { window.location.href = '/login'; }
     });
     return () => unsubscribe();
   }, []);
@@ -127,10 +123,7 @@ export default function Dashboard() {
 
       <main className="flex-1 ml-72 p-12">
         <header className="flex justify-between items-end mb-12">
-          <div>
-            <h1 className="text-4xl font-black text-slate-900 mb-2">Campaign Dashboard</h1>
-            <p className="text-slate-500 font-medium">Welcome back, {user?.displayName || 'Candidate'}</p>
-          </div>
+          <div><h1 className="text-4xl font-black text-slate-900 mb-2">Campaign Dashboard</h1><p className="text-slate-500 font-medium">Welcome back, {user?.displayName || 'Candidate'}</p></div>
           <div className="bg-white p-4 px-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
             <div className="text-center"><p className="text-[10px] font-black text-slate-400 uppercase">Sent</p><p className="font-black text-slate-900 text-xl">{stats.sent}</p></div>
             <div className="w-px h-8 bg-slate-100"></div>
@@ -169,8 +162,8 @@ export default function Dashboard() {
       </main>
 
       {selectedJob && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl my-auto">
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(8px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl relative z-[100000]">
             <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl">
               <div><h2 className="text-2xl font-black text-slate-900">Smart Apply</h2><p className="text-slate-500 font-medium">Tailoring application for <span className="text-blue-600">{selectedJob.employer_name}</span></p></div>
               <button onClick={() => setSelectedJob(null)} className="p-2 hover:bg-white rounded-full transition-all"><X className="w-6 h-6 text-slate-400" /></button>
