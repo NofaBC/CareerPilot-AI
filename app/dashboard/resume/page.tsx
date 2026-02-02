@@ -66,13 +66,15 @@ export default function ResumeBuilder() {
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <style jsx global>{`
         @media print {
-          body { background: white !important; }
-          .print\\:hidden { display: none !important; }
-          #resume-preview { transform: none !important; width: 100% !important; height: auto !important; padding: 0 !important; margin: 0 !important; border: none !important; box-shadow: none !important; }
+          body, html { background: white !important; margin: 0 !important; padding: 0 !important; }
+          .no-print { display: none !important; }
+          #resume-container { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
+          #resume-preview { transform: none !important; width: 100% !important; height: auto !important; padding: 40px !important; margin: 0 !important; border: none !important; box-shadow: none !important; background: white !important; }
+          .grid { display: block !important; }
         }
       `}</style>
 
-      <header className="bg-white border-b border-slate-200 p-6 sticky top-0 z-10 print:hidden">
+      <header className="bg-white border-b border-slate-200 p-6 sticky top-0 z-10 no-print">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
             <button onClick={() => window.location.href = '/dashboard'} className="p-2 hover:bg-slate-100 rounded-xl transition-all"><ArrowLeft className="w-5 h-5 text-slate-500" /></button>
@@ -87,8 +89,8 @@ export default function ResumeBuilder() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl mx-auto w-full p-8 grid grid-cols-2 gap-8 print:block print:p-0 print:max-w-none">
-        <div className="space-y-8 pb-24 print:hidden">
+      <main id="resume-container" className="flex-1 max-w-6xl mx-auto w-full p-8 grid grid-cols-2 gap-8">
+        <div className="space-y-8 pb-24 no-print">
           <section className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
             <h2 className="text-xl font-bold flex items-center gap-2"><FileText className="w-5 h-5 text-blue-600" /> Professional Summary</h2>
             <textarea className="w-full h-40 p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-slate-700 leading-relaxed" value={resumeData.summary} onChange={(e) => setResumeData({...resumeData, summary: e.target.value})} />
