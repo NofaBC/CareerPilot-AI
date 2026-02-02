@@ -43,15 +43,10 @@ export default function ResumeBuilder() {
           setResumeData(resumeSnap.data());
         } else {
           setResumeData({
-            summary: pData.summary || `Experienced ${pData.targetRole} with ${pData.experienceYears} years of expertise.`,
-            experience: [{
-              company: 'Current/Last Company',
-              role: pData.targetRole,
-              duration: '2020 - Present',
-              description: '• Led key initiatives and delivered measurable results.\n• Collaborated with cross-functional teams to achieve goals.'
-            }],
-            education: [{ school: 'University Name', degree: 'Bachelor of Science', year: '2015' }],
-            certifications: []
+            summary: pData.summary || "",
+            experience: pData.experience || [],
+            education: pData.education || [],
+            certifications: pData.certifications || []
           });
         }
       }
@@ -80,6 +75,7 @@ export default function ResumeBuilder() {
   };
 
   const optimizeWithAI = async () => {
+    if (!profile) return;
     setIsOptimizing(true);
     try {
       const res = await fetch('/api/generate-cover-letter', {
@@ -95,7 +91,8 @@ export default function ResumeBuilder() {
       });
       const data = await res.json();
       if (data.success) {
-        setResumeData({ ...resumeData, summary: data.coverLetter.split('\n\n')[0] });
+        const optimized = data.coverLetter.split('\n\n')[0].replace(/Dear Hiring Team at General,/, '').trim();
+        setResumeData({ ...resumeData, summary: optimized });
       }
     } catch (e) { console.error(e); }
     finally { setIsOptimizing(false); }
@@ -112,6 +109,29 @@ export default function ResumeBuilder() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
+      <style jsx global>{`
+        @media print {
+          body { background: white !important; }
+          .print\\:hidden { display: none !important; }
+          .print\\:p-0 { padding: 0 !important; }
+          .print\\:m-0 { margin: 0 !important; }
+          .print\\:shadow-none { box-shadow: none !important; }
+          .print\\:border-none { border: none !important; }
+          .print\\:max-w-none { max-width: none !important; }
+          .print\\:w-full { width: 100% !important; }
+          .print\\:block { display: block !important; }
+          #resume-preview { 
+            transform: none !important; 
+            width: 100% !important; 
+            height: auto !important; 
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+        }
+      `}</style>
+
       <header className="bg-white border-b border-slate-200 p-6 sticky top-0 z-10 print:hidden">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -171,8 +191,8 @@ export default function ResumeBuilder() {
           </section>
         </div>
 
-        <div className="sticky top-32 h-fit print:static print:top-0 print:h-auto">
-          <div id="resume-preview" className="bg-white shadow-2xl rounded-sm p-12 aspect-[1/1.41] overflow-hidden border border-slate-100 origin-top scale-[0.95] print:shadow-none print:border-none print:p-0 print:scale-100 print:aspect-auto">
+        <div className="sticky top-32 h-fit print:static print:top-0 print:h-auto print:w-full">
+          <div id="resume-preview" className="bg-white shadow-2xl rounded-sm p-12 aspect-[1/1.41] overflow-hidden border border-slate-100 origin-top scale-[0.95] print:shadow-none print:border-none print:p-0 print:scale-100 print:aspect-auto print:w-full">
             <header className="border-b-2 border-slate-900 pb-6 mb-8 flex justify-between items-end">
               <div>
                 <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">{auth.currentUser?.displayName || 'Candidate Name'}</h1>
@@ -184,33 +204,39 @@ export default function ResumeBuilder() {
               </div>
             </header>
             <div className="space-y-8">
-              <section>
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-100 pb-1">Professional Profile</h3>
-                <p className="text-slate-700 text-sm leading-relaxed">{resumeData.summary}</p>
-              </section>
-              <section>
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-1">Core Expertise</h3>
-                <div className="flex flex-wrap gap-2">
-                  {profile?.skills?.map((skill: string, i: number) => (
-                    <span key={i} className="px-3 py-1 bg-slate-100 text-slate-700 rounded text-[10px] font-bold uppercase tracking-wider">{skill}</span>
-                  ))}
-                </div>
-              </section>
-              <section>
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-1">Professional Experience</h3>
-                <div className="space-y-6">
-                  {resumeData.experience.map((exp: any, i: number) => (
-                    <div key={i}>
-                      <div className="flex justify-between items-baseline mb-1">
-                        <h4 className="font-black text-slate-900 text-sm">{exp.company}</h4>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">{exp.duration}</span>
+              {resumeData.summary && (
+                <section>
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-100 pb-1">Professional Profile</h3>
+                  <p className="text-slate-700 text-sm leading-relaxed">{resumeData.summary}</p>
+                </section>
+              )}
+              {profile?.skills?.length > 0 && (
+                <section>
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-1">Core Expertise</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {profile?.skills?.map((skill: string, i: number) => (
+                      <span key={i} className="px-3 py-1 bg-slate-100 text-slate-700 rounded text-[10px] font-bold uppercase tracking-wider">{skill}</span>
+                    ))}
+                  </div>
+                </section>
+              )}
+              {resumeData.experience?.length > 0 && (
+                <section>
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-1">Professional Experience</h3>
+                  <div className="space-y-6">
+                    {resumeData.experience.map((exp: any, i: number) => (
+                      <div key={i}>
+                        <div className="flex justify-between items-baseline mb-1">
+                          <h4 className="font-black text-slate-900 text-sm">{exp.company}</h4>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">{exp.duration}</span>
+                        </div>
+                        <p className="text-xs font-bold text-blue-600 mb-2">{exp.role}</p>
+                        <p className="text-slate-600 text-xs leading-relaxed whitespace-pre-line">{exp.description}</p>
                       </div>
-                      <p className="text-xs font-bold text-blue-600 mb-2">{exp.role}</p>
-                      <p className="text-slate-600 text-xs leading-relaxed whitespace-pre-line">{exp.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
+                    ))}
+                  </div>
+                </section>
+              )}
             </div>
           </div>
         </div>
