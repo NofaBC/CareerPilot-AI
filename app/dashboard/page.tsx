@@ -9,10 +9,13 @@ import {
   Briefcase, Target, Send, Mic2, ChevronRight, LayoutDashboard,
   User, Search, FileText, Star, Settings, LogOut, BarChart3
 } from 'lucide-react';
+import { JobMatchList } from '@/components/JobMatchList';
+import { FiCalendar, FiMapPin, FiExternalLink } from 'react-icons/fi';
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [applications, setApplications] = useState<any[]>([]);
   const [stats, setStats] = useState({
     profileComplete: 0,
     jobsQueued: 0,
@@ -40,10 +43,11 @@ export default function Dashboard() {
 
           const applicationsQuery = query(collection(firestore, "applications"), where("userId", "==", currentUser.uid));
           const applicationsSnap = await getDocs(applicationsQuery);
-          const applications = applicationsSnap.docs.map(doc => doc.data());
+          const applications = applicationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setApplications(applications);
 
           // Calculate stats
-          const profileCompletion = pData?.targetRole && pData?.location && pData?.skills?.length > 0 ? 100 : 50; // Simplified
+          const profileCompletion = pData?.targetRole && pData?.location && pData?.skills?.length > 0 ? 100 : 50;
           const jobsQueuedCount = 12; // Placeholder
           const interviewsScheduledCount = applications.filter(app => app.status === 'interview').length;
           const matchedThisWeekCount = 7; // Placeholder
@@ -100,22 +104,22 @@ export default function Dashboard() {
           </div>
           <span className="font-black text-2xl tracking-tighter text-white">CareerPilot<span className="text-blue-500">AI</span></span>
         </div>
-        
+
         <nav className="space-y-2 flex-1">
           {[
             { id: 'dashboard', icon: LayoutDashboard, label: 'Command Center', path: '/dashboard', active: true },
             { id: 'profile', icon: User, label: 'My Profile', path: '/profile/edit' },
-            { id: 'jobs', icon: Search, label: 'Job Search', path: '/dashboard' }, // Will navigate to dashboard to show jobs
-            { id: 'applications', icon: FileText, label: 'My Applications', path: '/dashboard' }, // Will navigate to dashboard to show applications
+            { id: 'jobs', icon: Search, label: 'Job Search', path: '/dashboard' },
+            { id: 'applications', icon: FileText, label: 'My Applications', path: '/dashboard' },
             { id: 'interview', icon: Mic2, label: 'Interview Coach', path: '/dashboard/interview' },
             { id: 'settings', icon: Settings, label: 'Settings', path: '/settings' },
           ].map((item) => (
-            <button 
+            <button
               key={item.id}
               onClick={() => item.path && (window.location.href = item.path)}
               className={`w-full flex items-center gap-4 p-4 rounded-2xl font-bold transition-all duration-300 ${
-                item.active 
-                ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-inner' 
+                item.active
+                ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-inner'
                 : 'text-slate-500 hover:bg-white/5 hover:text-slate-300'
               }`}
             >
@@ -131,7 +135,7 @@ export default function Dashboard() {
 
       <main className="flex-1 ml-80 p-12 relative z-10">
         {/* Hero Panel */}
-        <motion.section 
+        <motion.section
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className="bg-gradient-to-br from-blue-600/20 to-indigo-700/20 backdrop-blur-md p-10 rounded-[40px] border border-white/10 shadow-2xl mb-16"
@@ -176,7 +180,7 @@ export default function Dashboard() {
               <h2 className="font-black text-2xl text-white">Find & Score Jobs</h2>
             </div>
             <p className="text-slate-400 mb-6 flex-1">Search for roles. See 0–100% Fit Scores with explanations.</p>
-            <button onClick={() => window.location.href = '/dashboard'} className="bg-indigo-700/30 text-indigo-300 font-bold py-3 px-6 rounded-full text-md hover:bg-indigo-600/50 transition-all">
+            <button onClick={() => document.getElementById('job-matches')?.scrollIntoView({ behavior: 'smooth' })} className="bg-indigo-700/30 text-indigo-300 font-bold py-3 px-6 rounded-full text-md hover:bg-indigo-600/50 transition-all">
               Search Jobs
             </button>
           </motion.div>
@@ -193,7 +197,7 @@ export default function Dashboard() {
               <h2 className="font-black text-2xl text-white">Smart Apply</h2>
             </div>
             <p className="text-slate-400 mb-6 flex-1">Generate tailored cover letters and track applications.</p>
-            <button onClick={() => window.location.href = '/dashboard'} className="bg-green-700/30 text-green-300 font-bold py-3 px-6 rounded-full text-md hover:bg-green-600/50 transition-all">
+            <button onClick={() => document.getElementById('applications')?.scrollIntoView({ behavior: 'smooth' })} className="bg-green-700/30 text-green-300 font-bold py-3 px-6 rounded-full text-md hover:bg-green-600/50 transition-all">
               Open Applications
             </button>
           </motion.div>
@@ -215,6 +219,66 @@ export default function Dashboard() {
             </button>
           </motion.div>
         </div>
+
+        {/* Job Matches Section */}
+        <section id="job-matches" className="mb-16">
+          <JobMatchList userId={user.uid} />
+        </section>
+
+        {/* Applications Section - only if there are applications */}
+        {applications.length > 0 && (
+          <section id="applications" className="mb-16">
+            <div className="flex items-center mb-6">
+              <FiCalendar className="w-6 h-6 mr-2 text-blue-400" />
+              <h2 className="text-2xl font-semibold text-white">Your Applications</h2>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {applications.map((app) => (
+                <div 
+                  key={app.id} 
+                  className="bg-slate-900/40 p-5 rounded-lg border border-slate-700/50 hover:border-blue-500/30 transition-all"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white line-clamp-1">
+                        {app.jobTitle}
+                      </h3>
+                      <p className="text-blue-400 font-medium">{app.company}</p>
+                      {app.location && (
+                        <p className="text-sm text-slate-400 mt-1 flex items-center">
+                          <FiMapPin className="w-3 h-3 mr-1" />
+                          {app.location}
+                        </p>
+                      )}
+                    </div>
+                    <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                      app.status === 'offer' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+                      app.status === 'interview' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                      app.status === 'rejected' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                      app.status === 'screening' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                      'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                    }`}>
+                      {app.status}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-slate-500">
+                    <span>Applied: {new Date(app.appliedAt).toLocaleDateString()}</span>
+                    {app.applyLink && (
+                      <a 
+                        href={app.applyLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 flex items-center"
+                      >
+                        View Job <FiExternalLink className="w-3 h-3 ml-1" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Campaign Analytics */}
         <motion.section
