@@ -7,10 +7,10 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import {
   Briefcase, Target, Send, Mic2, ChevronRight, LayoutDashboard,
-  User, Search, FileText, Star, Settings, LogOut, BarChart3
+  User, Search, FileText, Star, Settings, LogOut, BarChart3,
+  Calendar, MapPin, ExternalLink
 } from 'lucide-react';
 import { JobMatchList } from '@/components/JobMatchList';
-import { FiCalendar, FiMapPin, FiExternalLink } from 'react-icons/fi';
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
@@ -229,7 +229,7 @@ export default function Dashboard() {
         {applications.length > 0 && (
           <section id="applications" className="mb-16">
             <div className="flex items-center mb-6">
-              <FiCalendar className="w-6 h-6 mr-2 text-blue-400" />
+              <Calendar className="w-6 h-6 mr-2 text-blue-400" />
               <h2 className="text-2xl font-semibold text-white">Your Applications</h2>
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -246,7 +246,7 @@ export default function Dashboard() {
                       <p className="text-blue-400 font-medium">{app.company}</p>
                       {app.location && (
                         <p className="text-sm text-slate-400 mt-1 flex items-center">
-                          <FiMapPin className="w-3 h-3 mr-1" />
+                          <MapPin className="w-3 h-3 mr-1" />
                           {app.location}
                         </p>
                       )}
@@ -270,7 +270,7 @@ export default function Dashboard() {
                         rel="noopener noreferrer"
                         className="text-blue-400 hover:text-blue-300 flex items-center"
                       >
-                        View Job <FiExternalLink className="w-3 h-3 ml-1" />
+                        View Job <ExternalLink className="w-3 h-3 ml-1" />
                       </a>
                     )}
                   </div>
