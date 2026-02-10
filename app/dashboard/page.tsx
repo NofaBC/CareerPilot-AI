@@ -10,7 +10,7 @@ import {
   User, Search, FileText, Star, Settings, LogOut, BarChart3,
   Calendar, MapPin, ExternalLink
 } from 'lucide-react';
-import { JobMatchList } from '@/components/dashboard/JobMatchList';
+import { JobMatchList } from '../../components/dashboard/JobMatchList';
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
