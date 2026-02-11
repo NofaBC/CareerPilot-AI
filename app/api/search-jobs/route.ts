@@ -1,51 +1,87 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/firebase';
+import { getAuth } from 'firebase-admin/auth';
+import { Firestore } from 'firebase-admin/firestore';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
-export const dynamic = 'force-dynamic';
+// Initialize Firebase Admin
+const serviceAccount = {
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+};
 
-const JSEARCH_API_KEY = process.env.JSEARCH_API_KEY;
+const app = initializeApp({
+  credential: cert(serviceAccount as any),
+  databaseURL: `https://${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.firebaseio.com`,
+});
 
-export async function POST(req: Request) {
+const db = getFirestore(app);
+
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json();
-    const { query, location } = body;
-    let jobs: any[] = [];
-
-    if (JSEARCH_API_KEY) {
-      try {
-        const combinedQuery = `${query} in ${location}`;
-        const url = `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(combinedQuery )}&page=1&num_pages=1`;
-        
-        const res = await fetch(url, {
-          headers: { 
-            'X-RapidAPI-Key': JSEARCH_API_KEY, 
-            'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' 
-          }
-        });
-        
-        const data = await res.json();
-        
-        if (data.data) {
-          jobs = data.data.map((j: any) => ({ 
-            ...j, 
-            fit_score: 85,
-            job_title: j.job_title || 'N/A',
-            employer_name: j.employer_name || 'Confidential',
-            job_city: j.job_city || location.split(',')[0],
-            job_state: j.job_state || location.split(',')[1]?.trim() || '',
-            job_apply_link: j.job_apply_link || '#'
-          })); 
-        }
-      } catch (e: any) { 
-        console.error("JSearch Fetch error:", e); 
-      }
+    // 1. Get userId from request body
+    const { userId } = await request.json();
+    if (!userId) {
+      return NextResponse.json({ error: 'userId required' }, { status: 400 });
     }
 
-    return NextResponse.json({ 
-      success: jobs.length > 0, 
-      jobs,
-      debug: jobs.length === 0 ? { jsearch: JSEARCH_API_KEY ? "No jobs found" : "Missing API Key" } : undefined
+    // 2. Fetch user profile from Firestore
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
+    }
+
+    const profile = userDoc.data();
+    const searchQuery = `${profile.targetRole || 'software engineer'} in ${profile.location || 'remote'}`;
+    const skills = profile.skills || [];
+
+    // 3. Call JSearch API
+    const jsearchUrl = `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(searchQuery)}&page=1&num_pages=1`;
+    const response = await fetch(jsearchUrl, {
+      method: 'GET',
+      headers: {
+        'X-RapidAPI-Key': process.env.JSEARCH_API_KEY!,
+        'X-RapidAPI-Host': 'jsearch.p.rapidapi.com',
+      },
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+
+    if (!response.ok) {
+      console.error('JSearch API error:', response.status, await response.text());
+      return NextResponse.json({ error: 'Failed to fetch jobs from JSearch' }, { status: 500 });
+    }
+
+    const data = await response.json();
+    const jobs = data.data || [];
+
+    // 4. Calculate fit scores based on skills match
+    const scoredJobs = jobs.map((job: any) => {
+      const jobSkills = job.skills?.map((s: any) => s.skill_name?.toLowerCase() || '') || [];
+      const matchingSkills = skills.filter((userSkill: string) =>
+        jobSkills.some((jobSkill: string) =>
+          jobSkill.includes(userSkill.toLowerCase()) || userSkill.toLowerCase().includes(jobSkill)
+        )
+      );
+      const fitScore = Math.round((matchingSkills.length / Math.max(jobSkills.length, 1)) * 100);
+
+      return {
+        id: job.job_id,
+        title: job.job_title,
+        company: job.employer_name,
+        location: job.job_city ? `${job.job_city}, ${job.job_state}` : 'Remote',
+        description: job.job_description?.slice(0, 300) + '...',
+        applyLink: job.job_apply_link,
+        salary: job.job_salary?.min ? `${job.job_salary.min.toLocaleString()} - ${job.job_salary.max?.toLocaleString() || ''}` : 'Not disclosed',
+        fitScore,
+        matchingSkills: matchingSkills.slice(0, 5),
+        posted: job.job_posted_at ? new Date(job.job_posted_at).toLocaleDateString() : 'Recent',
+      };
+    }).sort((a: any, b: any) => b.fitScore - a.fitScore).slice(0, 10); // Top 10
+
+    return NextResponse.json({ jobs: scoredJobs });
+  } catch (error) {
+    console.error('/api/search-jobs error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
