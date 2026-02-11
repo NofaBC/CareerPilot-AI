@@ -7,7 +7,7 @@ const serviceAccount = {
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
 };
 
-// Only initialize if no app exists
+// Only initialize Firebase if no app exists
 if (!getApps().length) {
   initializeApp({
     credential: cert(serviceAccount as any),
