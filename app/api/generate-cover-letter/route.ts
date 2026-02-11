@@ -1,50 +1,53 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
-
-const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
-
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const requestData = await req.json();
-    const { jobTitle, employer, jobDescription, userProfile, resumeSummary } = requestData;
+    const { userId, jobTitle, company, jobDescription, userProfile } = await request.json();
 
-    if (!OPENROUTER_KEY) {
-      return NextResponse.json({ success: false, message: "API Key Missing" }, { status: 500 });
+    if (!userId || !jobTitle || !company || !jobDescription || !userProfile) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const promptText = `
-      Write a professional cover letter for:
-      Role: ${jobTitle || 'Professional'}
-      Company: ${employer || 'Company'}
-      Description: ${jobDescription || ''}
+    // Build prompt
+    const prompt = `Write a concise, enthusiastic cover letter for ${userProfile.name || 'the candidate'} applying to ${jobTitle} at ${company}.
 
-      Candidate:
-      Role: ${userProfile?.targetRole || ''}
-      Exp: ${userProfile?.experienceYears || ''}
-      Skills: ${userProfile?.skills?.join(', ') || ''}
-      Summary: ${resumeSummary || ''}
+Candidate Profile:
+- Skills: ${userProfile.skills?.join(', ') || 'N/A'}
+- Experience: ${userProfile.experience || 'N/A'}
+- Target Role: ${userProfile.targetRole || 'N/A'}
 
-      Instructions: 3 paragraphs, professional tone, start with "Dear Hiring Team at ${employer || 'the company'},".
-    `;
+Job Description:
+${jobDescription}
 
-    const apiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
+Write in a professional but personable tone. Keep it under 250 words. Start with "Dear Hiring Manager," and end with "Sincerely, ${userProfile.name || 'Candidate'}".`;
+
+    // Call OpenRouter (or OpenAI)
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        "Authorization": `Bearer ${OPENROUTER_KEY}`,
-        "Content-Type": "application/json"
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://career-pilot-ai.vercel.app',
+        'X-Title': 'CareerPilot AI',
       },
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
-        messages: [{ role: "user", content: promptText }]
-      } )
+        model: 'openai/gpt-4-turbo-preview',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 500,
+      }),
     });
 
-    const result = await apiResponse.json();
-    const letter = result.choices?.[0]?.message?.content || "Failed to generate content.";
+    if (!response.ok) {
+      throw new Error(`OpenRouter error: ${response.status}`);
+    }
 
-    return NextResponse.json({ success: true, coverLetter: letter });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+    const data = await response.json();
+    const coverLetter = data.choices?.[0]?.message?.content || 'Failed to generate cover letter.';
+
+    return NextResponse.json({ coverLetter });
+  } catch (error) {
+    console.error('/api/generate-cover-letter error:', error);
+    return NextResponse.json({ error: 'Failed to generate cover letter' }, { status: 500 });
   }
 }
