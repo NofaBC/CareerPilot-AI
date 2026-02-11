@@ -1,4 +1,4 @@
-import { initializeApp, cert } from 'firebase-admin/app';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
 const serviceAccount = {
@@ -7,11 +7,14 @@ const serviceAccount = {
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
 };
 
-const app = initializeApp({
-  credential: cert(serviceAccount as any),
-  databaseURL: `https://${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.firebaseio.com`,
-});
+// Only initialize if no app exists
+if (!getApps().length) {
+  initializeApp({
+    credential: cert(serviceAccount as any),
+    databaseURL: `https://${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.firebaseio.com`,
+  });
+}
 
-const db = getFirestore(app);
+const db = getFirestore();
 
 export { db };
