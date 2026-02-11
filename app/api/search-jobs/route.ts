@@ -1,23 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/firebase';
-import { getAuth } from 'firebase-admin/auth';
-import { Firestore } from 'firebase-admin/firestore';
-import { initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-
-// Initialize Firebase Admin
-const serviceAccount = {
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-};
-
-const app = initializeApp({
-  credential: cert(serviceAccount as any),
-  databaseURL: `https://${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.firebaseio.com`,
-});
-
-const db = getFirestore(app);
+import { db } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
