@@ -53,16 +53,44 @@ export async function POST(request: NextRequest) {
     const jobs = data.data || [];
     
     console.log(`✅ Found ${jobs.length} jobs from JSearch`);
+    console.log('📊 User skills:', skills.length, 'skills');
 
     // 5. Calculate fit scores based on skills match
     const scoredJobs = jobs.map((job: any) => {
+      // Extract job skills from the JSearch response
       const jobSkills = job.skills?.map((s: any) => s.skill_name?.toLowerCase() || '') || [];
-      const matchingSkills = skills.filter((userSkill: string) =>
-        jobSkills.some((jobSkill: string) =>
-          jobSkill.includes(userSkill.toLowerCase()) || userSkill.toLowerCase().includes(jobSkill)
-        )
-      );
-      const fitScore = Math.round((matchingSkills.length / Math.max(jobSkills.length, 1)) * 100);
+      
+      // Also search for skills in job title and description for better matching
+      const jobText = `${job.job_title} ${job.job_description || ''}`.toLowerCase();
+      
+      // Find matching skills
+      const matchingSkills = skills.filter((userSkill: string) => {
+        const skillLower = userSkill.toLowerCase().trim();
+        if (!skillLower || skillLower.length < 2) return false;
+        
+        // Check if skill matches job skills or appears in job text
+        return jobSkills.some((jobSkill: string) =>
+          jobSkill.includes(skillLower) || skillLower.includes(jobSkill)
+        ) || jobText.includes(skillLower);
+      });
+      
+      // Calculate fit score based on matching skills (weighted by user skills count)
+      const fitScore = skills.length > 0 
+        ? Math.round((matchingSkills.length / skills.length) * 100)
+        : 50; // Default to 50% if no skills provided
+
+      // Format posted date
+      let postedDate = 'Recent';
+      if (job.job_posted_at_datetime_utc) {
+        try {
+          const date = new Date(job.job_posted_at_datetime_utc);
+          if (!isNaN(date.getTime())) {
+            postedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          }
+        } catch (e) {
+          postedDate = 'Recent';
+        }
+      }
 
       return {
         id: job.job_id,
@@ -74,7 +102,7 @@ export async function POST(request: NextRequest) {
         salary: job.job_salary?.min ? `${job.job_salary.min.toLocaleString()} - ${job.job_salary.max?.toLocaleString() || ''}` : 'Not disclosed',
         fitScore,
         matchingSkills: matchingSkills.slice(0, 5),
-        posted: job.job_posted_at ? new Date(job.job_posted_at).toLocaleDateString() : 'Recent',
+        posted: postedDate,
       };
     }).sort((a: any, b: any) => b.fitScore - a.fitScore).slice(0, 10); // Top 10
 
