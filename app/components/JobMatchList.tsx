@@ -64,13 +64,25 @@ export default function JobMatchList() {
       });
 
       const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('Job search failed:', data.error);
+        alert(`Job search failed: ${data.error || 'Unknown error'}`);
+        return;
+      }
+      
       console.log('Job search results:', data.jobs);
       setJobs(data.jobs || []);
+      
+      if (data.jobs && data.jobs.length === 0) {
+        alert('No jobs found. Try updating your profile with different skills or location.');
+      }
     } catch (error) {
       console.error('Failed to search jobs:', error);
       alert('Error searching jobs. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const toggleDetails = (jobId: string) => {
