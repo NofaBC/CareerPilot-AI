@@ -1,65 +1,76 @@
-/**
- * CareerPilot AI™: /api/interview Endpoint
- * 
- * This endpoint handles the interaction with the AI Interview Coach,
- * including question generation and response analysis.
- */
+import { NextRequest, NextResponse } from 'next/server';
 
-import { UserProfile, JobPosting } from './scoring-service';
+export async function POST(request: NextRequest) {
+  try {
+    const { messages, interviewType, targetRole, userProfile } = await request.json();
 
-export default async function handler(req: any, res: any) {
-  const { action, sessionId, userId, jobId, userResponse } = req.body;
+    if (!messages || !Array.isArray(messages)) {
+      return NextResponse.json({ error: 'Messages array is required' }, { status: 400 });
+    }
 
-  switch (action) {
-    case 'START_SESSION':
-      return startInterviewSession(userId, jobId, res);
-    case 'SUBMIT_RESPONSE':
-      return processUserResponse(sessionId, userResponse, res);
-    case 'GET_REPORT':
-      return generateFinalReport(sessionId, res);
-    default:
-      return res.status(400).json({ message: 'Invalid action' });
+    // Check if OpenAI API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('❌ OPENAI_API_KEY not configured');
+      return NextResponse.json({ 
+        error: 'Interview coach not configured',
+        response: null
+      }, { status: 500 });
+    }
+
+    // Build system prompt based on interview type
+    let systemPrompt = `You are an expert interview coach conducting a ${interviewType || 'general'} interview for a ${targetRole || 'professional'} position. 
+
+Your role:
+- Ask relevant, thoughtful interview questions
+- Provide constructive feedback on answers
+- Be encouraging but honest
+- Ask follow-up questions to dig deeper
+- Maintain a professional but friendly tone
+
+Interview style: ${interviewType === 'behavioral' ? 'Ask STAR method questions about past experiences' : interviewType === 'technical' ? 'Ask technical questions relevant to the role' : 'Ask a mix of questions about experience, skills, and motivation'}
+
+Keep responses concise and focused. After 5-7 questions, offer to wrap up and provide overall feedback.`;
+
+    if (userProfile) {
+      systemPrompt += `\n\nCandidate background: ${userProfile}`;
+    }
+
+    console.log('🤖 Generating interview response with OpenAI');
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages
+        ],
+        temperature: 0.7,
+        max_tokens: 300,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ OpenAI API error:', response.status, errorText);
+      throw new Error(`OpenAI error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const assistantMessage = data.choices?.[0]?.message?.content || 'I apologize, I encountered an error. Could you please repeat that?';
+    
+    console.log('✅ Interview response generated');
+
+    return NextResponse.json({ response: assistantMessage });
+  } catch (error: any) {
+    console.error('❌ /api/interview-coach error:', error);
+    return NextResponse.json({ 
+      error: 'Failed to generate response',
+      details: error.message
+    }, { status: 500 });
   }
-}
-
-async function startInterviewSession(userId: string, jobId: string, res: any) {
-  // 1. Fetch User Profile and Job Details from Firestore
-  // 2. Initialize Session in Firestore
-  const sessionId = `session_${Date.now()}`;
-  
-  // 3. Generate First Question using LLM (OpenRouter)
-  const firstQuestion = "Can you tell me about yourself and why you're interested in this role?";
-  
-  return res.status(200).json({
-    sessionId,
-    question: firstQuestion,
-    isLastQuestion: false
-  });
-}
-
-async function processUserResponse(sessionId: string, response: string, res: any) {
-  // 1. Transcribe Audio (if applicable)
-  // 2. Analyze Response using LLM
-  // 3. Determine if more questions are needed
-  const nextQuestion = "That's interesting. Can you tell me about a technical challenge you faced in your last role?";
-  
-  return res.status(200).json({
-    nextQuestion,
-    feedback: "Good start! Try to be more specific about your contributions.",
-    isLastQuestion: false
-  });
-}
-
-async function generateFinalReport(sessionId: string, res: any) {
-  // 1. Compile all questions and responses
-  // 2. Generate comprehensive report using LLM
-  const report = {
-    overallScore: 82,
-    summary: "You have a strong technical background and communicate clearly.",
-    strengths: ["Technical depth", "Clarity of expression"],
-    improvements: ["Use more STAR method examples", "Reduce filler words"],
-    actionableTips: ["Practice the STAR method for behavioral questions."]
-  };
-
-  return res.status(200).json({ report });
 }
