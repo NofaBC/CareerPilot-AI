@@ -82,28 +82,29 @@ export default function ProfileSetup() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Years Exp.</label>
-              <input 
-                required
-                type="number"
-                placeholder="12"
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
-                value={formData.experienceYears}
-                onChange={(e) => setFormData({...formData, experienceYears: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700">Skills (comma separated)</label>
-              <input 
-                required
-                placeholder="Nursing, Leadership"
-                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
-                value={formData.skills}
-                onChange={(e) => setFormData({...formData, skills: e.target.value})}
-              />
-            </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700">Years Experience</label>
+            <input 
+              required
+              type="number"
+              placeholder="12"
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
+              value={formData.experienceYears}
+              onChange={(e) => setFormData({...formData, experienceYears: e.target.value})}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700">Key Skills</label>
+            <p className="text-xs text-slate-500">List your main technical skills, separated by commas (e.g., React, Node.js, TypeScript, AWS)</p>
+            <textarea 
+              required
+              rows={4}
+              placeholder="React, Node.js, TypeScript, MongoDB, AWS, Docker, GraphQL"
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              value={formData.skills}
+              onChange={(e) => setFormData({...formData, skills: e.target.value})}
+            />
           </div>
 
           <button 
