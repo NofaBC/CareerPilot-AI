@@ -12,32 +12,49 @@ export async function POST(request: NextRequest) {
     // 2. Fetch user profile from Firestore
     const userDoc = await db.collection('users').doc(userId).get();
     if (!userDoc.exists) {
-      return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
+      return NextResponse.json({ error: 'User profile not found. Please complete your profile setup first.' }, { status: 404 });
     }
 
     const profile = userDoc.data();
-    const searchQuery = `${profile.targetRole || 'software engineer'} in ${profile.location || 'remote'}`;
-    const skills = profile.skills || [];
+    const searchQuery = `${profile?.targetRole || 'software engineer'} in ${profile?.location || 'remote'}`;
+    const skills = profile?.skills || [];
+    
+    console.log('🔍 Searching jobs for:', { searchQuery, skills });
 
-    // 3. Call JSearch API
+    // 3. Check if API key exists
+    if (!process.env.JSEARCH_API_KEY) {
+      console.error('❌ JSEARCH_API_KEY not configured');
+      return NextResponse.json({ 
+        error: 'Job search service not configured. Please contact support.',
+        jobs: [] 
+      }, { status: 500 });
+    }
+
+    // 4. Call JSearch API
     const jsearchUrl = `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(searchQuery)}&page=1&num_pages=1`;
     const response = await fetch(jsearchUrl, {
       method: 'GET',
       headers: {
-        'X-RapidAPI-Key': process.env.JSEARCH_API_KEY!,
+        'X-RapidAPI-Key': process.env.JSEARCH_API_KEY,
         'X-RapidAPI-Host': 'jsearch.p.rapidapi.com',
       },
     });
 
     if (!response.ok) {
-      console.error('JSearch API error:', response.status, await response.text());
-      return NextResponse.json({ error: 'Failed to fetch jobs from JSearch' }, { status: 500 });
+      const errorText = await response.text();
+      console.error('❌ JSearch API error:', response.status, errorText);
+      return NextResponse.json({ 
+        error: `Job search failed: ${response.status}`,
+        jobs: [] 
+      }, { status: 500 });
     }
 
     const data = await response.json();
     const jobs = data.data || [];
+    
+    console.log(`✅ Found ${jobs.length} jobs from JSearch`);
 
-    // 4. Calculate fit scores based on skills match
+    // 5. Calculate fit scores based on skills match
     const scoredJobs = jobs.map((job: any) => {
       const jobSkills = job.skills?.map((s: any) => s.skill_name?.toLowerCase() || '') || [];
       const matchingSkills = skills.filter((userSkill: string) =>
