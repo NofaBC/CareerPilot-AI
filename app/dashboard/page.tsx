@@ -48,9 +48,9 @@ export default function Dashboard() {
 
           // Calculate stats
           const profileCompletion = pData?.targetRole && pData?.location && pData?.skills?.length > 0 ? 100 : 50;
-          const jobsQueuedCount = 12; // Placeholder
+          const jobsQueuedCount = 0; // Not tracking queued jobs yet
           const interviewsScheduledCount = applications.filter(app => app.status === 'interview').length;
-          const matchedThisWeekCount = 7; // Placeholder
+          const matchedThisWeekCount = 0; // Not tracking matched jobs yet
           const applicationsSentCount = applications.length;
           const responsesReceivedCount = applications.filter(app => app.status === 'viewed' || app.status === 'interview').length;
           const interviewsBookedCount = applications.filter(app => app.status === 'interview').length;
