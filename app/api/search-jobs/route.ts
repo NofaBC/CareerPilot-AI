@@ -79,8 +79,12 @@ export async function POST(request: NextRequest) {
     }).sort((a: any, b: any) => b.fitScore - a.fitScore).slice(0, 10); // Top 10
 
     return NextResponse.json({ jobs: scoredJobs });
-  } catch (error) {
-    console.error('/api/search-jobs error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('❌ /api/search-jobs error:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error.message,
+      stack: error.stack 
+    }, { status: 500 });
   }
 }
