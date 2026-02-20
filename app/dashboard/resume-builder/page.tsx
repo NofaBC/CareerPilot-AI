@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-hooks';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { firestore } from '@/lib/firebase';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { firestore, auth } from '@/lib/firebase';
 import { Download, Plus, Trash2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -67,9 +67,28 @@ export default function ResumeBuilder() {
       if (!user) return;
       
       try {
+        // Load existing resume if available
         const resumeDoc = await getDoc(doc(firestore, 'resumes', user.uid));
         if (resumeDoc.exists()) {
           setResumeData(resumeDoc.data() as ResumeData);
+        } else {
+          // No resume exists - pre-populate from user profile
+          const profileQuery = query(collection(firestore, 'users'), where('uid', '==', user.uid));
+          const profileSnap = await getDocs(profileQuery);
+          
+          if (!profileSnap.empty) {
+            const profileData = profileSnap.docs[0].data();
+            setResumeData(prev => ({
+              ...prev,
+              personalInfo: {
+                ...prev.personalInfo,
+                fullName: user.displayName || '',
+                email: user.email || '',
+                location: profileData.location || '',
+              },
+              skills: profileData.skills || [],
+            }));
+          }
         }
       } catch (error) {
         console.error('Failed to load resume:', error);
