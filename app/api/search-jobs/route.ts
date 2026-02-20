@@ -16,7 +16,11 @@ export async function POST(request: NextRequest) {
     }
 
     const profile = userDoc.data();
-    const searchQuery = `${profile?.targetRole || 'software engineer'} in ${profile?.location || 'remote'}`;
+    // Combine city and country for better international job search
+    const location = profile?.country 
+      ? `${profile?.location || ''}, ${profile?.country}`.trim()
+      : (profile?.location || 'remote');
+    const searchQuery = `${profile?.targetRole || 'software engineer'} in ${location}`;
     const skills = profile?.skills || [];
     
     console.log('🔍 Searching jobs for:', { searchQuery, skills });
@@ -79,13 +83,15 @@ export async function POST(request: NextRequest) {
         ? Math.round((matchingSkills.length / skills.length) * 100)
         : 50; // Default to 50% if no skills provided
 
-      // Format posted date
+      // Format posted date - use ISO format for international compatibility
       let postedDate = 'Recent';
       if (job.job_posted_at_datetime_utc) {
         try {
           const date = new Date(job.job_posted_at_datetime_utc);
           if (!isNaN(date.getTime())) {
-            postedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            // Use ISO-like format that's universally understood
+            const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+            postedDate = date.toLocaleDateString(undefined, options); // undefined uses user's locale
           }
         } catch (e) {
           postedDate = 'Recent';
@@ -99,7 +105,7 @@ export async function POST(request: NextRequest) {
         location: job.job_city ? `${job.job_city}, ${job.job_state}` : 'Remote',
         description: job.job_description?.slice(0, 300) + '...',
         applyLink: job.job_apply_link,
-        salary: job.job_salary?.min ? `${job.job_salary.min.toLocaleString()} - ${job.job_salary.max?.toLocaleString() || ''}` : 'Not disclosed',
+        salary: job.job_salary?.min ? `${job.job_salary.currency || ''} ${job.job_salary.min.toLocaleString()} - ${job.job_salary.max?.toLocaleString() || ''}`.trim() : 'Not disclosed',
         fitScore,
         matchingSkills: matchingSkills.slice(0, 5),
         posted: postedDate,

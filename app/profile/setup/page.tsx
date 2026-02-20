@@ -9,6 +9,7 @@ export default function ProfileSetup() {
   const [formData, setFormData] = useState({
     targetRole: '',
     location: '',
+    country: '',
     experienceYears: '',
     skills: ''
   });
@@ -25,6 +26,7 @@ export default function ProfileSetup() {
       await setDoc(doc(firestore, "users", auth.currentUser.uid), {
         targetRole: formData.targetRole,
         location: formData.location,
+        country: formData.country,
         experienceYears: parseInt(formData.experienceYears),
         skills: formData.skills.split(',').map(s => s.trim()),
         updatedAt: new Date().toISOString()
@@ -64,7 +66,7 @@ export default function ProfileSetup() {
             <label className="text-sm font-bold text-slate-700">Target Role</label>
             <input 
               required
-              placeholder="e.g. Head Nurse"
+              placeholder="e.g. Software Engineer or Registered Nurse"
               className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
               value={formData.targetRole}
               onChange={(e) => setFormData({...formData, targetRole: e.target.value})}
@@ -72,10 +74,36 @@ export default function ProfileSetup() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700">Location</label>
+            <label className="text-sm font-bold text-slate-700">Country</label>
+            <select
+              required
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
+              value={formData.country}
+              onChange={(e) => setFormData({...formData, country: e.target.value})}
+            >
+              <option value="">Select your country</option>
+              <option value="United States">🇺🇸 United States</option>
+              <option value="United Kingdom">🇬🇧 United Kingdom</option>
+              <option value="Canada">🇨🇦 Canada</option>
+              <option value="Australia">🇦🇺 Australia</option>
+              <option value="Germany">🇩🇪 Germany</option>
+              <option value="France">🇫🇷 France</option>
+              <option value="Netherlands">🇳🇱 Netherlands</option>
+              <option value="Spain">🇪🇸 Spain</option>
+              <option value="Italy">🇮🇹 Italy</option>
+              <option value="Ireland">🇮🇪 Ireland</option>
+              <option value="Singapore">🇸🇬 Singapore</option>
+              <option value="India">🇮🇳 India</option>
+              <option value="UAE">🇦🇪 United Arab Emirates</option>
+              <option value="Other">🌍 Other</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700">City / Region</label>
             <input 
               required
-              placeholder="e.g. Chicago, IL"
+              placeholder="e.g. London, Toronto, or Sydney"
               className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
               value={formData.location}
               onChange={(e) => setFormData({...formData, location: e.target.value})}

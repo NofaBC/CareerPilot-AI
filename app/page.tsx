@@ -7,6 +7,10 @@ export default function Home() {
         <div className="text-center space-y-6">
           <h1 className="text-5xl font-bold text-slate-50">CareerPilot AI™</h1>
           <p className="text-xl text-slate-300">Autonomous Job Hunt Agent</p>
+          <p className="text-sm text-slate-400 flex items-center justify-center gap-2">
+            <span className="inline-block">🌍</span>
+            Available globally - US, UK, Canada, Australia, Europe & more
+          </p>
           <div className="flex gap-4 justify-center">
             <Link href="/signup" className="bg-emerald-500 text-slate-900 px-6 py-3 rounded-lg font-semibold">
               Start Free Trial
