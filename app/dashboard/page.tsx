@@ -8,7 +8,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import {
   Briefcase, Target, Send, Mic2, ChevronRight, LayoutDashboard,
   User, Search, FileText, Star, Settings, LogOut, BarChart3,
-  Calendar, MapPin, ExternalLink
+  Calendar, MapPin, ExternalLink, File
 } from 'lucide-react';
 import { JobMatchList } from '../../components/dashboard/JobMatchList';
 
@@ -111,7 +111,8 @@ export default function Dashboard() {
             { id: 'profile', icon: User, label: 'My Profile', path: '/profile/edit' },
             { id: 'jobs', icon: Search, label: 'Job Search', path: '/dashboard' },
             { id: 'applications', icon: FileText, label: 'My Applications', path: '/dashboard' },
-            { id: 'interview', icon: Mic2, label: 'Interview Coach', path: '/dashboard/interview' },
+            { id: 'resume', icon: File, label: 'Resume Builder', path: '/dashboard/resume-builder' },
+            { id: 'interview', icon: Mic2, label: 'Interview Coach', path: '/dashboard/interview-coach' },
             { id: 'settings', icon: Settings, label: 'Settings', path: '/settings' },
           ].map((item) => (
             <button
@@ -214,7 +215,7 @@ export default function Dashboard() {
               <h2 className="font-black text-2xl text-white">Interview Coach</h2>
             </div>
             <p className="text-slate-400 mb-6 flex-1">Practice with AI before the real interview.</p>
-            <button onClick={() => window.location.href = '/dashboard/interview'} className="bg-purple-700/30 text-purple-300 font-bold py-3 px-6 rounded-full text-md hover:bg-purple-600/50 transition-all">
+            <button onClick={() => window.location.href = '/dashboard/interview-coach'} className="bg-purple-700/30 text-purple-300 font-bold py-3 px-6 rounded-full text-md hover:bg-purple-600/50 transition-all">
               Start Interview Practice
             </button>
           </motion.div>
