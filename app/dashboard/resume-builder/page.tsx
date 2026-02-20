@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-hooks';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { firestore, auth } from '@/lib/firebase';
-import { Download, Plus, Trash2, Save } from 'lucide-react';
+import { Download, Plus, Trash2, Save, Upload, FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface Experience {
@@ -46,6 +46,7 @@ export default function ResumeBuilder() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
       fullName: '',
@@ -181,6 +182,75 @@ export default function ResumeBuilder() {
       education: resumeData.education.map((edu) =>
         edu.id === id ? { ...edu, [field]: value } : edu
       ),
+    });
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file type - for now only support text files
+    if (file.type !== 'text/plain' && !file.name.endsWith('.txt')) {
+      alert('Please upload a .txt file. To convert PDF/DOCX to text:\n\n1. Open your resume in the original application\n2. Select all text and copy\n3. Paste into a new text file\n4. Save as .txt and upload here');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Read file content
+      const text = await readFileContent(file);
+      
+      // Parse resume using AI
+      const response = await fetch('/api/parse-resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumeText: text }),
+      });
+
+      if (!response.ok) throw new Error('Failed to parse resume');
+
+      const { data } = await response.json();
+      
+      // Add IDs to experience and education entries
+      const experienceWithIds = (data.experience || []).map((exp: any) => ({
+        ...exp,
+        id: Date.now().toString() + Math.random(),
+      }));
+      
+      const educationWithIds = (data.education || []).map((edu: any) => ({
+        ...edu,
+        id: Date.now().toString() + Math.random(),
+      }));
+
+      setResumeData({
+        personalInfo: data.personalInfo || resumeData.personalInfo,
+        summary: data.summary || resumeData.summary,
+        experience: experienceWithIds,
+        education: educationWithIds,
+        skills: data.skills || resumeData.skills,
+        updatedAt: new Date().toISOString(),
+      });
+
+      alert('Resume uploaded and parsed successfully! Please review and edit as needed.');
+    } catch (error) {
+      console.error('Error uploading resume:', error);
+      alert('Failed to parse resume. Please try again or enter information manually.');
+    } finally {
+      setUploading(false);
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
+  const readFileContent = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        resolve(content);
+      };
+      reader.onerror = reject;
+      reader.readAsText(file);
     });
   };
 
@@ -350,9 +420,20 @@ export default function ResumeBuilder() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Resume Builder</h1>
-              <p className="text-gray-600 mt-1">Build your professional resume</p>
+              <p className="text-gray-600 mt-1">Build your professional resume or upload an existing one</p>
             </div>
             <div className="flex gap-3">
+              <label className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors cursor-pointer" title="Upload your resume as .txt file">
+                <Upload className="w-4 h-4" />
+                {uploading ? 'Uploading...' : 'Upload .TXT'}
+                <input
+                  type="file"
+                  accept=".txt,text/plain"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
               <button
                 onClick={handleSave}
                 disabled={saving}
