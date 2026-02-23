@@ -51,6 +51,13 @@ export default function JobMatchList() {
     loadProfile();
   }, [user]);
 
+  // Auto-load jobs when component mounts
+  useEffect(() => {
+    if (user) {
+      searchJobs();
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const searchJobs = async () => {
     if (!user) {
       alert('Please sign in to search jobs');

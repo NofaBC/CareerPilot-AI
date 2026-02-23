@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 
+// Helper function to check for common skill variations
+function checkSkillVariations(skill: string, jobText: string): boolean {
+  const variations: Record<string, string[]> = {
+    'hospitality': ['hotel', 'guest service', 'front desk', 'concierge'],
+    'customer service': ['guest service', 'client service', 'customer care', 'customer support'],
+    'reception': ['receptionist', 'front desk', 'front office'],
+    'management': ['manager', 'lead', 'supervisor', 'director'],
+    'communication': ['interpersonal', 'verbal', 'written'],
+    'organization': ['organizational', 'scheduling', 'planning'],
+    'microsoft office': ['ms office', 'word', 'excel', 'powerpoint'],
+    'leadership': ['team lead', 'supervisor', 'manager'],
+  };
+  
+  // Check if skill has variations and if any appear in job text
+  const skillVariations = variations[skill] || [];
+  return skillVariations.some(variation => jobText.includes(variation));
+}
+
 export async function POST(request: NextRequest) {
   try {
     // 1. Get userId from request body
@@ -60,28 +78,62 @@ export async function POST(request: NextRequest) {
     console.log('📊 User skills:', skills.length, 'skills');
 
     // 5. Calculate fit scores based on skills match
-    const scoredJobs = jobs.map((job: any) => {
+    const scoredJobs = jobs.map((job: any, index: number) => {
       // Extract job skills from the JSearch response
-      const jobSkills = job.skills?.map((s: any) => s.skill_name?.toLowerCase() || '') || [];
+      const jobSkills = job.job_required_skills || [];
+      const jobTitle = job.job_title || '';
+      const jobDescription = job.job_description || '';
       
-      // Also search for skills in job title and description for better matching
-      const jobText = `${job.job_title} ${job.job_description || ''}`.toLowerCase();
+      // Combine all job text for matching
+      const jobText = `${jobTitle} ${jobDescription}`.toLowerCase();
       
-      // Find matching skills
+      // Find matching skills with more flexible matching
       const matchingSkills = skills.filter((userSkill: string) => {
         const skillLower = userSkill.toLowerCase().trim();
         if (!skillLower || skillLower.length < 2) return false;
         
-        // Check if skill matches job skills or appears in job text
-        return jobSkills.some((jobSkill: string) =>
-          jobSkill.includes(skillLower) || skillLower.includes(jobSkill)
-        ) || jobText.includes(skillLower);
+        // Match if:
+        // 1. Skill appears in job required skills array (case-insensitive)
+        const inJobSkills = jobSkills.some((jobSkill: string) => {
+          const jobSkillLower = jobSkill.toLowerCase();
+          return jobSkillLower.includes(skillLower) || skillLower.includes(jobSkillLower);
+        });
+        
+        // 2. Skill appears in job title or description
+        const inJobText = jobText.includes(skillLower);
+        
+        // 3. Handle common skill variations (hospitality → hotel, customer service → guest service, etc.)
+        const hasVariation = checkSkillVariations(skillLower, jobText);
+        
+        return inJobSkills || inJobText || hasVariation;
       });
       
-      // Calculate fit score based on matching skills (weighted by user skills count)
-      const fitScore = skills.length > 0 
-        ? Math.round((matchingSkills.length / skills.length) * 100)
-        : 50; // Default to 50% if no skills provided
+      // Calculate fit score based on matching skills
+      let fitScore = 0;
+      if (skills.length > 0) {
+        // Base score from skill matches
+        fitScore = Math.round((matchingSkills.length / skills.length) * 100);
+        
+        // Bonus points for job title match with user's target role
+        const targetRoleLower = profile?.targetRole?.toLowerCase() || '';
+        if (targetRoleLower && jobTitle.toLowerCase().includes(targetRoleLower)) {
+          fitScore = Math.min(100, fitScore + 20);
+        }
+      } else {
+        fitScore = 50; // Default if no skills provided
+      }
+      
+      // Log first job for debugging
+      if (index === 0) {
+        console.log('🔍 Fit Score Debug (First Job):', {
+          jobTitle,
+          userSkills: skills,
+          jobSkills: jobSkills.slice(0, 5),
+          matchingSkills,
+          fitScore,
+          targetRole: profile?.targetRole
+        });
+      }
 
       // Format posted date - use ISO format for international compatibility
       let postedDate = 'Recent';
