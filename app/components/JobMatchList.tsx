@@ -25,10 +25,12 @@ interface Job {
 export default function JobMatchList() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sending, setSending] = useState<Set<string>>(new Set());
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [coverLetters, setCoverLetters] = useState<Record<string, string>>({});
   const [resumeText, setResumeText] = useState<string>('');
+  const [smartApplyJob, setSmartApplyJob] = useState<Job | null>(null);
+  const [generatingCoverLetter, setGeneratingCoverLetter] = useState(false);
+  const [smartApplyStep, setSmartApplyStep] = useState<'generating' | 'ready' | 'applied'>('generating');
   const { user } = useAuth();
 
   // Load user's resume text for cover letter generation
@@ -90,80 +92,102 @@ export default function JobMatchList() {
   };
 
   const handleSmartApply = async (job: Job) => {
-    // 1. Validate link exists
     if (!job.applyLink) {
       alert('No application link available for this job');
       return;
     }
 
-    // 2. OPEN LINK IMMEDIATELY - Must happen before any async operations to avoid popup blocker
-    console.log('🔍 Opening job link:', job.applyLink);
-    const newWindow = window.open(job.applyLink, '_blank', 'noopener,noreferrer');
-    
-    // Check if popup was blocked
-    if (!newWindow || newWindow.closed) {
-      alert('⚠️ Pop-up blocked by browser!\n\nPlease allow pop-ups for this site or click "View Details" and apply manually.');
-      return;
-    }
+    // Open modal and start generating cover letter
+    setSmartApplyJob(job);
+    setSmartApplyStep('generating');
+    setGeneratingCoverLetter(true);
 
-    // 3. Set loading state
-    setSending(prev => new Set(prev).add(job.id));
-
-    // 4. Run async operations in background (fire-and-forget)
-    (async () => {
-      try {
-        // Track application in Firebase
-        if (user) {
-          await trackApplication(user.uid, {
-            userId: user.uid,
-            jobId: job.id,
+    try {
+      // Generate cover letter
+      if (resumeText && job.description) {
+        console.log('🤖 Generating cover letter...');
+        const response = await fetch('/api/generate-cover-letter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             jobTitle: job.title,
             company: job.company,
-            location: job.location,
-            applyLink: job.applyLink!,
-            salary: job.salary,
-            remote: job.remote,
-            status: 'applied',
-          });
-          console.log('✅ Application tracked in Firebase');
-        }
-
-        // Generate cover letter via server API
-        if (resumeText && job.description) {
-          console.log('🤖 Generating cover letter via API...');
-          const response = await fetch('/api/generate-cover-letter', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jobTitle: job.title,
-              company: job.company,
-              jobDescription: job.description,
-              resumeText: resumeText
-            })
-          });
-
-          const data = await response.json();
-          if (data.coverLetter) {
-            setCoverLetters(prev => ({ ...prev, [job.id]: data.coverLetter }));
-            console.log('✅ Cover letter generated via API');
-          } else {
-            console.warn('⚠️ Cover letter generation failed, using placeholder');
-            setCoverLetters(prev => ({ 
-              ...prev, 
-              [job.id]: generatePlaceholderCoverLetter(job.title, job.company) 
-            }));
-          }
-        }
-      } catch (error) {
-        console.error('❌ Background operations failed:', error);
-      } finally {
-        setSending(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(job.id);
-          return newSet;
+            jobDescription: job.description,
+            resumeText: resumeText
+          })
         });
+
+        const data = await response.json();
+        if (data.coverLetter) {
+          setCoverLetters(prev => ({ ...prev, [job.id]: data.coverLetter }));
+          console.log('✅ Cover letter generated');
+        } else {
+          setCoverLetters(prev => ({ 
+            ...prev, 
+            [job.id]: generatePlaceholderCoverLetter(job.title, job.company) 
+          }));
+        }
+      } else {
+        // No resume text, use placeholder
+        setCoverLetters(prev => ({ 
+          ...prev, 
+          [job.id]: generatePlaceholderCoverLetter(job.title, job.company) 
+        }));
       }
-    })();
+
+      setSmartApplyStep('ready');
+    } catch (error) {
+      console.error('❌ Cover letter generation failed:', error);
+      // Still show ready state with placeholder
+      setCoverLetters(prev => ({ 
+        ...prev, 
+        [job.id]: generatePlaceholderCoverLetter(job.title, job.company) 
+      }));
+      setSmartApplyStep('ready');
+    } finally {
+      setGeneratingCoverLetter(false);
+    }
+  };
+
+  const handleOpenJobAndApply = async (job: Job) => {
+    if (!job.applyLink || !user) return;
+
+    // Track application in Firebase
+    try {
+      await trackApplication(user.uid, {
+        userId: user.uid,
+        jobId: job.id,
+        jobTitle: job.title,
+        company: job.company,
+        location: job.location,
+        applyLink: job.applyLink,
+        salary: job.salary,
+        remote: job.remote,
+        status: 'applied',
+      });
+      console.log('✅ Application tracked in Firebase');
+    } catch (error) {
+      console.error('❌ Failed to track application:', error);
+    }
+
+    // Open job link in new tab
+    window.open(job.applyLink, '_blank', 'noopener,noreferrer');
+    
+    // Update modal state
+    setSmartApplyStep('applied');
+  };
+
+  const handleCopyCoverLetter = (jobId: string) => {
+    const coverLetter = coverLetters[jobId];
+    if (coverLetter) {
+      navigator.clipboard.writeText(coverLetter);
+      alert('Cover letter copied to clipboard!');
+    }
+  };
+
+  const closeSmartApplyModal = () => {
+    setSmartApplyJob(null);
+    setSmartApplyStep('generating');
   };
 
   // Fallback placeholder generator (for when API fails)
@@ -199,7 +223,6 @@ Applicant`;
       {jobs.length > 0 ? (
         <div className="space-y-4 max-h-96 overflow-y-auto">
           {jobs.map((job) => {
-            const isSending = sending.has(job.id);
             const isExpanded = expandedJob === job.id;
             const hasCoverLetter = coverLetters[job.id];
             const fitScore = job.fitScore || 0;
@@ -274,20 +297,10 @@ Applicant`;
                         
                         <button 
                           onClick={() => handleSmartApply(job)}
-                          disabled={isSending}
-                          className={`px-3 py-1 rounded text-sm flex items-center ${isSending ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white disabled:cursor-not-allowed disabled:bg-gray-400`}
+                          className="px-3 py-1 rounded text-sm flex items-center bg-green-600 hover:bg-green-700 text-white"
                         >
-                          {isSending ? (
-                            <>
-                              <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
-                              Sending...
-                            </>
-                          ) : (
-                            <>
-                              <FiMail className="w-3 h-3 mr-1" />
-                              Smart Apply
-                            </>
-                          )}
+                          <FiZap className="w-3 h-3 mr-1" />
+                          Smart Apply
                         </button>
                       </>
                     ) : (
@@ -303,6 +316,110 @@ Applicant`;
         <div className="text-center py-8">
           <FiBriefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">Click "Find Jobs" to see AI matches</p>
+        </div>
+      )}
+
+      {/* Smart Apply Modal */}
+      {smartApplyJob && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">{smartApplyJob.title}</h3>
+                  <p className="text-blue-600 font-medium">{smartApplyJob.company}</p>
+                </div>
+                <button 
+                  onClick={closeSmartApplyModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Step 1: Generating */}
+              {smartApplyStep === 'generating' && (
+                <div className="text-center py-12">
+                  <div className="inline-block">
+                    <svg className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Generating Your Cover Letter...</h4>
+                  <p className="text-gray-600">Our AI is analyzing the job and crafting a personalized cover letter for you.</p>
+                </div>
+              )}
+
+              {/* Step 2: Ready */}
+              {smartApplyStep === 'ready' && (
+                <div>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-start">
+                      <svg className="w-6 h-6 text-green-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <h4 className="font-semibold text-green-900 mb-1">Cover Letter Ready!</h4>
+                        <p className="text-sm text-green-700">Your personalized cover letter has been generated and is ready to use.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4 max-h-64 overflow-y-auto">
+                    <div className="flex justify-between items-start mb-2">
+                      <h5 className="font-medium text-gray-900">Your Cover Letter:</h5>
+                      <button
+                        onClick={() => handleCopyCoverLetter(smartApplyJob.id)}
+                        className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                      >
+                        <FiMail className="w-3 h-3 mr-1" />
+                        Copy
+                      </button>
+                    </div>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{coverLetters[smartApplyJob.id]}</p>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <p className="text-sm text-blue-900">
+                      <strong>Next steps:</strong> Click "Open Job & Apply" to visit the employer's website in a new tab. 
+                      You can paste the cover letter above into their application form.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleOpenJobAndApply(smartApplyJob)}
+                    className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center"
+                  >
+                    <FiExternalLink className="w-5 h-5 mr-2" />
+                    Open Job & Apply
+                  </button>
+                </div>
+              )}
+
+              {/* Step 3: Applied */}
+              {smartApplyStep === 'applied' && (
+                <div className="text-center py-12">
+                  <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">Application Tracked!</h4>
+                  <p className="text-gray-600 mb-6">We've tracked this application in your dashboard. Good luck with your interview!</p>
+                  <button
+                    onClick={closeSmartApplyModal}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
