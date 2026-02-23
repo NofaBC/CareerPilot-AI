@@ -294,8 +294,8 @@ export default function ResumeBuilder() {
       personalInfo.email,
       personalInfo.phone,
       personalInfo.location,
-      personalInfo.linkedin,
-      personalInfo.website,
+      personalInfo.linkedin && personalInfo.linkedin.trim() ? personalInfo.linkedin : null,
+      personalInfo.website && personalInfo.website.trim() ? personalInfo.website : null,
     ].filter(Boolean).join(' • ');
     doc.text(contactInfo, leftMargin, yPos);
     yPos += 8;
@@ -507,7 +507,7 @@ export default function ResumeBuilder() {
             />
             <input
               type="url"
-              placeholder="LinkedIn URL"
+              placeholder="LinkedIn URL (Optional)"
               value={resumeData.personalInfo.linkedin}
               onChange={(e) =>
                 setResumeData({
@@ -519,7 +519,7 @@ export default function ResumeBuilder() {
             />
             <input
               type="url"
-              placeholder="Website/Portfolio"
+              placeholder="Website/Portfolio (Optional)"
               value={resumeData.personalInfo.website}
               onChange={(e) =>
                 setResumeData({

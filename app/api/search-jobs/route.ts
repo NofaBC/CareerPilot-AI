@@ -102,7 +102,9 @@ export async function POST(request: NextRequest) {
         id: job.job_id,
         title: job.job_title,
         company: job.employer_name,
-        location: job.job_city ? `${job.job_city}, ${job.job_state}` : 'Remote',
+        location: job.job_city 
+          ? `${job.job_city}${job.job_state ? ', ' + job.job_state : ''}`
+          : 'Remote',
         description: job.job_description?.slice(0, 300) + '...',
         applyLink: job.job_apply_link,
         salary: job.job_salary?.min ? `${job.job_salary.currency || ''} ${job.job_salary.min.toLocaleString()} - ${job.job_salary.max?.toLocaleString() || ''}`.trim() : 'Not disclosed',

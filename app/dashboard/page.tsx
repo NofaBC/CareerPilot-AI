@@ -47,7 +47,14 @@ export default function Dashboard() {
           setApplications(applications);
 
           // Calculate stats
-          const profileCompletion = pData?.targetRole && pData?.location && pData?.skills?.length > 0 ? 100 : 50;
+          const hasTargetRole = pData?.targetRole;
+          const hasLocation = pData?.location || pData?.country;
+          const hasSkills = pData?.skills?.length > 0;
+          const hasExperience = pData?.experienceYears !== undefined && pData?.experienceYears !== null;
+          
+          // Calculate percentage based on filled fields
+          const fieldsCompleted = [hasTargetRole, hasLocation, hasSkills, hasExperience].filter(Boolean).length;
+          const profileCompletion = Math.round((fieldsCompleted / 4) * 100);
           const jobsQueuedCount = 0; // Not tracking queued jobs yet
           const interviewsScheduledCount = applications.filter(app => app.status === 'interview').length;
           const matchedThisWeekCount = 0; // Not tracking matched jobs yet
