@@ -233,13 +233,14 @@ export default function Dashboard() {
           <JobMatchList userId={user.uid} />
         </section>
 
-        {/* Applications Section - only if there are applications */}
-        {applications.length > 0 && (
-          <section id="applications" className="mb-16">
-            <div className="flex items-center mb-6">
-              <Calendar className="w-6 h-6 mr-2 text-blue-400" />
-              <h2 className="text-2xl font-semibold text-white">Your Applications</h2>
-            </div>
+        {/* Applications Section */}
+        <section id="applications" className="mb-16">
+          <div className="flex items-center mb-6">
+            <Calendar className="w-6 h-6 mr-2 text-blue-400" />
+            <h2 className="text-2xl font-semibold text-white">Your Applications</h2>
+          </div>
+          
+          {applications.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {applications.map((app) => (
                 <div 
@@ -285,8 +286,24 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
-          </section>
-        )}
+          ) : (
+            <div className="bg-slate-900/40 backdrop-blur-md p-12 rounded-2xl border border-white/5 text-center">
+              <Send className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">No Applications Yet</h3>
+              <p className="text-slate-400 mb-6">
+                Start applying to jobs using the <span className="text-green-400 font-semibold">Smart Apply</span> feature.
+                Your AI-generated cover letters and application tracking will appear here.
+              </p>
+              <button 
+                onClick={() => document.getElementById('job-matches')?.scrollIntoView({ behavior: 'smooth' })}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors inline-flex items-center"
+              >
+                <Search className="w-4 h-4 mr-2" />
+                Browse Jobs
+              </button>
+            </div>
+          )}
+        </section>
 
         {/* Campaign Analytics */}
         <motion.section
