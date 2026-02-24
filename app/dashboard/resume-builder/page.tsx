@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-hooks';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { firestore, auth } from '@/lib/firebase';
-import { Download, Plus, Trash2, Save, Upload, FileText } from 'lucide-react';
+import { Download, Plus, Trash2, Save, Upload, FileText, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface Experience {
@@ -449,6 +449,29 @@ export default function ResumeBuilder() {
                 <Download className="w-4 h-4" />
                 Download PDF
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Format Disclaimer Banner */}
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-semibold text-blue-900 mb-1">Resume Format Notice</h3>
+              <p className="text-sm text-blue-800">
+                This resume builder uses a <strong>US/International English format</strong>. If you're applying to jobs in other countries, 
+                you may need to adapt the format to local standards:
+              </p>
+              <ul className="text-sm text-blue-700 mt-2 space-y-1 ml-4 list-disc">
+                <li><strong>UK/Ireland:</strong> Use "CV" format (2+ pages, more detailed education section)</li>
+                <li><strong>Germany:</strong> Include professional photo, personal details (age, nationality)</li>
+                <li><strong>France/Spain/Italy:</strong> Photo often expected, different section ordering</li>
+                <li><strong>Australia/Canada:</strong> Similar to US format, but check local preferences</li>
+              </ul>
+              <p className="text-xs text-blue-600 mt-2">
+                💡 <strong>Tip:</strong> Research country-specific resume conventions before applying to international positions.
+              </p>
             </div>
           </div>
         </div>
