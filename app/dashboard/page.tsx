@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { auth, firestore } from '../lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import {
   Briefcase, Target, Send, Mic2, ChevronRight, LayoutDashboard,
@@ -32,13 +32,23 @@ export default function Dashboard() {
       if (currentUser) {
         setUser(currentUser);
         try {
-          // Fetch profile and applications to calculate stats
-          const profileQuery = query(collection(firestore, "users"), where("uid", "==", currentUser.uid));
-          const profileSnap = await getDocs(profileQuery);
+          // Fetch profile from document with UID as document ID
+          const profileDoc = await getDoc(doc(firestore, "users", currentUser.uid));
           let pData: any = {};
-          if (!profileSnap.empty) {
-            pData = profileSnap.docs[0].data();
+          if (profileDoc.exists()) {
+            pData = profileDoc.data();
             setProfile(pData);
+            console.log('📊 Profile loaded:', { 
+              targetRole: pData.targetRole,
+              location: pData.location,
+              country: pData.country,
+              skills: pData.skills,
+              skillsType: typeof pData.skills,
+              skillsIsArray: Array.isArray(pData.skills),
+              skillsLength: pData.skills?.length 
+            });
+          } else {
+            console.warn('⚠️ No profile found for user:', currentUser.uid);
           }
 
           const applicationsQuery = query(collection(firestore, "applications"), where("userId", "==", currentUser.uid));
