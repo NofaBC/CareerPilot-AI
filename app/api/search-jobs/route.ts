@@ -39,9 +39,24 @@ export async function POST(request: NextRequest) {
       ? `${profile?.location || ''}, ${profile?.country}`.trim()
       : (profile?.location || 'remote');
     const searchQuery = `${profile?.targetRole || 'software engineer'} in ${location}`;
-    const skills = profile?.skills || [];
     
-    console.log('🔍 Searching jobs for:', { searchQuery, skills });
+    // Robust skill handling - ensure it's always an array
+    let skills: string[] = [];
+    if (Array.isArray(profile?.skills)) {
+      skills = profile.skills;
+    } else if (typeof profile?.skills === 'string') {
+      // If skills is a string, split it
+      skills = profile.skills.split(/[,•]/).map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+    }
+    
+    console.log('🔍 Searching jobs for:', { 
+      searchQuery, 
+      skillsType: typeof profile?.skills,
+      skillsIsArray: Array.isArray(profile?.skills),
+      skillsRaw: profile?.skills,
+      skillsParsed: skills,
+      skillsCount: skills.length 
+    });
 
     // 3. Check if API key exists
     if (!process.env.JSEARCH_API_KEY) {
