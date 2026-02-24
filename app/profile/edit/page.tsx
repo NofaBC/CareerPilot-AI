@@ -100,6 +100,8 @@ export default function EditProfile() {
           <div className="space-y-2">
             <label className="text-sm font-bold text-slate-700">Key Skills</label>
             <textarea placeholder="Skills (comma separated)" rows={3} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl resize-none" value={formData.skills} onChange={(e) => setFormData({...formData, skills: e.target.value})} required />
+          </div>
+          
           <button type="submit" disabled={isSaving} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold">{isSaving ? "Saving..." : "Save Changes"}</button>
         </form>
       </div>
