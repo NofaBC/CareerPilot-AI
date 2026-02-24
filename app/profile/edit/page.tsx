@@ -40,7 +40,11 @@ export default function EditProfile() {
         location: formData.location,
         country: formData.country,
         experienceYears: parseInt(formData.experienceYears),
-        skills: formData.skills.split(',').map(s => s.trim()),
+        // Handle both comma and bullet point separators
+        skills: formData.skills
+          .split(/[,•]/)  // Split by comma OR bullet point
+          .map(s => s.trim())
+          .filter(s => s.length > 0),  // Remove empty strings
         updatedAt: new Date().toISOString()
       });
       window.location.href = '/dashboard';
