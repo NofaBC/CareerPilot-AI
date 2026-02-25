@@ -94,16 +94,16 @@ export default function ProfileSetup() {
               <option value="United Kingdom">🇬🇧 United Kingdom</option>
               <option value="Canada">🇨🇦 Canada</option>
               <option value="Australia">🇦🇺 Australia</option>
-              <option value="Germany">🇩🇪 Germany</option>
-              <option value="France">🇫🇷 France</option>
-              <option value="Netherlands">🇳🇱 Netherlands</option>
-              <option value="Spain">🇪🇸 Spain</option>
-              <option value="Italy">🇮🇹 Italy</option>
               <option value="Ireland">🇮🇪 Ireland</option>
               <option value="Singapore">🇸🇬 Singapore</option>
-              <option value="India">🇮🇳 India</option>
-              <option value="UAE">🇦🇪 United Arab Emirates</option>
-              <option value="Other">🌍 Other</option>
+              <option value="Germany">🇩🇪 Germany (Limited Support)</option>
+              <option value="France">🇫🇷 France (Limited Support)</option>
+              <option value="Netherlands">🇳🇱 Netherlands (Limited Support)</option>
+              <option value="Spain">🇪🇸 Spain (Limited Support)</option>
+              <option value="Italy">🇮🇹 Italy (Limited Support)</option>
+              <option value="India">🇮🇳 India (Limited Support)</option>
+              <option value="UAE">🇦🇪 UAE (Limited Support)</option>
+              <option value="Other">🌍 Other (Limited Support)</option>
             </select>
             
             {/* English-only warning for non-English countries */}
