@@ -83,9 +83,7 @@ export default function JobMatchList() {
       console.log('Job search results:', data.jobs);
       setJobs(data.jobs || []);
       
-      if (data.jobs && data.jobs.length === 0) {
-        alert('No jobs found. Try updating your profile with different skills or location.');
-      }
+      // Don't alert - UI will show helpful message
     } catch (error) {
       console.error('Failed to search jobs:', error);
       alert('Error searching jobs. Please try again.');
@@ -319,10 +317,23 @@ Applicant`;
             );
           })}
         </div>
+      ) : loading ? (
+        <div className="text-center py-8">
+          <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-3"></div>
+          <p className="text-gray-500">Searching for jobs...</p>
+        </div>
       ) : (
         <div className="text-center py-8">
           <FiBriefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">Click "Find Jobs" to see AI matches</p>
+          <p className="text-gray-700 font-medium mb-2">No jobs found</p>
+          <p className="text-gray-500 text-sm mb-4">Try updating your profile with different skills or location.</p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4 text-left max-w-md mx-auto">
+            <p className="text-sm text-blue-900">
+              <strong className="font-semibold">International users:</strong> Job availability varies by country. 
+              Some regions may have limited listings in English. Consider searching in major cities or 
+              English-speaking countries (US, UK, Canada, Australia) for best results.
+            </p>
+          </div>
         </div>
       )}
 

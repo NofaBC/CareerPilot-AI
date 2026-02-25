@@ -91,6 +91,19 @@ export async function POST(request: NextRequest) {
     
     console.log(`✅ Found ${jobs.length} jobs from JSearch`);
     console.log('📊 User skills:', skills.length, 'skills');
+    console.log('🌍 Search query sent to JSearch:', searchQuery);
+    console.log('🔍 JSearch response status:', response.status);
+    
+    // If no jobs found, log detailed info for debugging
+    if (jobs.length === 0) {
+      console.warn('⚠️ No jobs found for query:', {
+        searchQuery,
+        location,
+        country: profile?.country,
+        city: profile?.location,
+        targetRole: profile?.targetRole
+      });
+    }
 
     // 5. Calculate fit scores based on skills match
     const scoredJobs = jobs.map((job: any, index: number) => {
