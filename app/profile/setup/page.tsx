@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 // FIXED: Changed db to firestore to match your firebase.ts
 import { auth, firestore } from '../../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { Loader2, CheckCircle } from 'lucide-react';
+import { Loader2, CheckCircle, Info } from 'lucide-react';
 
 export default function ProfileSetup() {
   const [formData, setFormData] = useState({
@@ -15,6 +15,10 @@ export default function ProfileSetup() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isDone, setIsDone] = useState(false);
+  
+  // English-speaking countries for better job search results
+  const englishSpeakingCountries = ['United States', 'United Kingdom', 'Canada', 'Australia', 'Ireland', 'Singapore'];
+  const isNonEnglishCountry = formData.country && !englishSpeakingCountries.includes(formData.country);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,6 +105,22 @@ export default function ProfileSetup() {
               <option value="UAE">🇦🇪 United Arab Emirates</option>
               <option value="Other">🌍 Other</option>
             </select>
+            
+            {/* English-only warning for non-English countries */}
+            {isNonEnglishCountry && (
+              <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+                <div className="flex items-start gap-2">
+                  <Info className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-yellow-800">
+                      <strong className="font-semibold">Note:</strong> CareerPilot AI currently supports English-language job searches only. 
+                      Job availability may be limited in non-English-speaking countries. For best results, consider searching in 
+                      English-speaking countries (US, UK, Canada, Australia).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
