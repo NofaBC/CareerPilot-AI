@@ -10,7 +10,7 @@
 - **Styling:** Tailwind CSS
 - **Authentication:** Firebase Auth
 - **Database:** Firebase Firestore
-- **AI:** OpenAI GPT-3.5-turbo
+- **AI:** OpenAI GPT-4o
 - **Job Search:** JSearch API (RapidAPI)
 - **PDF Generation:** jsPDF
 - **Deployment:** Vercel

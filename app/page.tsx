@@ -306,7 +306,7 @@ export default function Home() {
       <footer className="border-t border-slate-800 py-8">
         <div className="container mx-auto px-4 text-center text-slate-400 text-sm">
           <p>© 2026 CareerPilot AI™ - Part of NOFA AI Factory</p>
-          <p className="mt-2">Powered by OpenAI GPT-4 • Available in US, UK, Canada, Australia, Europe & more</p>
+          <p className="mt-2">Powered by OpenAI GPT-4o • Available in US, UK, Canada, Australia, Europe & more</p>
           <p className="mt-2">
             Need help? Contact us: <a href="mailto:supportdesk@nofabusinessconsulting.com" className="text-emerald-400 hover:text-emerald-300 underline">supportdesk@nofabusinessconsulting.com</a>
           </p>

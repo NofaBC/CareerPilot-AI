@@ -24,6 +24,7 @@ export const SUBSCRIPTION_TIERS = {
     credits: 40,
     interval: 'month',
     description: 'Try before you buy',
+    resetPolicy: 'Credits reset monthly (no rollover)',
     features: [
       '40 credits per month',
       '~5 job searches',
@@ -31,6 +32,7 @@ export const SUBSCRIPTION_TIERS = {
       '~1 interview practice',
       'Resume builder (unlimited)',
       'Global job search (14+ countries)',
+      '⚠️ Credits reset monthly',
     ],
   },
   starter: {
@@ -40,6 +42,7 @@ export const SUBSCRIPTION_TIERS = {
     credits: 500,
     interval: 'month',
     description: 'For active job seekers',
+    resetPolicy: 'Credits reset monthly (no rollover)',
     stripePriceId: '', // To be filled after Stripe product creation
     features: [
       '500 credits per month',
@@ -50,6 +53,7 @@ export const SUBSCRIPTION_TIERS = {
       'Global job search (14+ countries)',
       'Application tracking',
       'Dashboard analytics',
+      '⚠️ Credits reset monthly',
     ],
   },
   pro: {
@@ -59,6 +63,7 @@ export const SUBSCRIPTION_TIERS = {
     credits: 1200, // Conservative: protects margins
     interval: 'month',
     description: 'For power users',
+    resetPolicy: 'Credits reset monthly (no rollover)',
     stripePriceId: '', // To be filled after Stripe product creation
     badge: 'MOST POPULAR',
     features: [
@@ -70,6 +75,7 @@ export const SUBSCRIPTION_TIERS = {
       'Priority support',
       'Early access to features',
       'Advanced analytics',
+      '⚠️ Credits reset monthly',
     ],
   },
 } as const;
@@ -182,6 +188,7 @@ export const PRICING_COPY = {
       { name: 'Interview Practice', cost: 25, description: 'Full AI interview coaching session' },
       { name: 'Resume Builder', cost: 0, description: 'Build and export unlimited resumes (always free)' },
     ],
+    importantNote: '⚠️ Subscription credits reset monthly and do not roll over. Top-up credits never expire.',
   },
 
   faqs: [
@@ -195,7 +202,7 @@ export const PRICING_COPY = {
     },
     {
       q: 'Do unused credits roll over?',
-      a: 'Subscription credits reset monthly. Top-up credits (purchased separately) never expire.',
+      a: 'No. Subscription credits reset every month and unused credits do not carry over. However, top-up credits (purchased separately) never expire and remain in your account forever.',
     },
     {
       q: 'Which countries do you support?',
@@ -220,7 +227,14 @@ export const ESTIMATED_COSTS = {
 } as const;
 
 /**
- * Margin calculations (for reference)
+ * Margin target calculations (for internal reference)
+ * 
+ * IMPORTANT: These are TARGET margins assuming 100% credit utilization.
+ * Actual margins will vary based on user behavior:
+ * - Light users (don't use all credits) = higher margins
+ * - Heavy users (max out credits) = these target margins
+ * 
+ * This represents the worst-case margin scenario (full utilization).
  */
 export function calculateMargins() {
   return {
@@ -229,18 +243,21 @@ export function calculateMargins() {
       cost: SUBSCRIPTION_TIERS.free.credits * ESTIMATED_COSTS.perCredit,
       margin: -(SUBSCRIPTION_TIERS.free.credits * ESTIMATED_COSTS.perCredit),
       marginPercent: -100,
+      note: 'Customer acquisition cost (expected loss)',
     },
     starter: {
       revenue: SUBSCRIPTION_TIERS.starter.price,
       cost: SUBSCRIPTION_TIERS.starter.credits * ESTIMATED_COSTS.perCredit,
       margin: SUBSCRIPTION_TIERS.starter.price - (SUBSCRIPTION_TIERS.starter.credits * ESTIMATED_COSTS.perCredit),
       marginPercent: ((SUBSCRIPTION_TIERS.starter.price - (SUBSCRIPTION_TIERS.starter.credits * ESTIMATED_COSTS.perCredit)) / SUBSCRIPTION_TIERS.starter.price) * 100,
+      note: 'Target margin if user uses all 500 credits',
     },
     pro: {
       revenue: SUBSCRIPTION_TIERS.pro.price,
       cost: SUBSCRIPTION_TIERS.pro.credits * ESTIMATED_COSTS.perCredit,
       margin: SUBSCRIPTION_TIERS.pro.price - (SUBSCRIPTION_TIERS.pro.credits * ESTIMATED_COSTS.perCredit),
       marginPercent: ((SUBSCRIPTION_TIERS.pro.price - (SUBSCRIPTION_TIERS.pro.credits * ESTIMATED_COSTS.perCredit)) / SUBSCRIPTION_TIERS.pro.price) * 100,
+      note: 'Target margin if user uses all 1,200 credits',
     },
   };
 }

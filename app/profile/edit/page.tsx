@@ -3,12 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { auth, firestore } from '../../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { Loader2, ArrowLeft, Info } from 'lucide-react';
+import { Loader2, ArrowLeft, Info, AlertTriangle, X } from 'lucide-react';
 
 export default function EditProfile() {
   const [formData, setFormData] = useState({ targetRole: '', location: '', country: '', experienceYears: '', skills: '' });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [originalCountry, setOriginalCountry] = useState('');
   
   // English-speaking countries for better job search results
   const englishSpeakingCountries = ['United States', 'United Kingdom', 'Canada', 'Australia', 'Ireland', 'Singapore'];
@@ -20,13 +22,15 @@ export default function EditProfile() {
         const docSnap = await getDoc(doc(firestore, "users", user.uid));
         if (docSnap.exists()) {
           const data = docSnap.data();
+          const country = data.country || '';
           setFormData({
             targetRole: data.targetRole || '',
             location: data.location || '',
-            country: data.country || '',
+            country: country,
             experienceYears: data.experienceYears?.toString() || '',
             skills: data.skills?.join(', ') || ''
           });
+          setOriginalCountry(country);
         }
         setIsLoading(false);
       } else { window.location.href = '/login'; }
@@ -37,6 +41,18 @@ export default function EditProfile() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth.currentUser) return;
+    
+    // Show confirmation modal if changing to non-English country
+    const isChangingToNonEnglish = formData.country !== originalCountry && isNonEnglishCountry;
+    if (isChangingToNonEnglish) {
+      setShowConfirmModal(true);
+      return;
+    }
+    
+    await saveProfile();
+  };
+  
+  const saveProfile = async () => {
     setIsSaving(true);
     try {
       await setDoc(doc(firestore, "users", auth.currentUser.uid), {
@@ -55,10 +71,89 @@ export default function EditProfile() {
     } catch (error) { alert("Error saving profile"); }
     finally { setIsSaving(false); }
   };
+  
+  const handleConfirmProceed = async () => {
+    setShowConfirmModal(false);
+    await saveProfile();
+  };
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin w-10 h-10 text-blue-600" /></div>;
 
   return (
+    <>
+    {/* Geographic Limitation Confirmation Modal */}
+    {showConfirmModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 relative animate-in fade-in zoom-in duration-200">
+          {/* Close button */}
+          <button
+            onClick={() => setShowConfirmModal(false)}
+            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          
+          {/* Warning icon */}
+          <div className="flex justify-center">
+            <div className="bg-amber-100 rounded-full p-3">
+              <AlertTriangle className="w-8 h-8 text-amber-600" />
+            </div>
+          </div>
+          
+          {/* Content */}
+          <div className="text-center space-y-3">
+            <h2 className="text-xl font-bold text-slate-900">
+              Limited Support for {formData.country}
+            </h2>
+            <div className="text-sm text-slate-600 space-y-2 text-left">
+              <p>
+                <strong className="text-slate-900">Important:</strong> CareerPilot AI works best in English-speaking countries (US, UK, Canada, Australia, Ireland, Singapore).
+              </p>
+              <p>
+                In <strong>{formData.country}</strong>, you may experience:
+              </p>
+              <ul className="list-disc list-inside space-y-1 pl-2">
+                <li>Very limited or zero job listings</li>
+                <li>Jobs primarily from English-speaking companies</li>
+                <li>All resumes and cover letters in English only</li>
+              </ul>
+              <p className="text-amber-700 font-medium">
+                We recommend selecting an English-speaking country for the best experience.
+              </p>
+            </div>
+          </div>
+          
+          {/* Action buttons */}
+          <div className="space-y-2 pt-2">
+            <button
+              onClick={() => setShowConfirmModal(false)}
+              className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+            >
+              ← Change Country
+            </button>
+            <button
+              onClick={handleConfirmProceed}
+              disabled={isSaving}
+              className="w-full py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="animate-spin w-4 h-4" />
+                  Saving...
+                </>
+              ) : (
+                'I Understand, Continue Anyway'
+              )}
+            </button>
+          </div>
+          
+          <p className="text-xs text-slate-400 text-center pt-2">
+            You can change this anytime in Settings
+          </p>
+        </div>
+      </div>
+    )}
+    
     <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-md mx-auto bg-white p-10 rounded-3xl border border-slate-200 shadow-xl space-y-8">
         <button onClick={() => window.location.href = '/dashboard'} className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold"><ArrowLeft className="w-4 h-4" /> Back</button>
@@ -130,5 +225,6 @@ export default function EditProfile() {
         </form>
       </div>
     </div>
+    </>
   );
 }

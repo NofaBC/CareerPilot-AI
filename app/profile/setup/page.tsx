@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 // FIXED: Changed db to firestore to match your firebase.ts
 import { auth, firestore } from '../../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { Loader2, CheckCircle, Info } from 'lucide-react';
+import { Loader2, CheckCircle, Info, AlertTriangle, X } from 'lucide-react';
 
 export default function ProfileSetup() {
   const [formData, setFormData] = useState({
@@ -15,6 +15,7 @@ export default function ProfileSetup() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isDone, setIsDone] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   
   // English-speaking countries for better job search results
   const englishSpeakingCountries = ['United States', 'United Kingdom', 'Canada', 'Australia', 'Ireland', 'Singapore'];
@@ -24,6 +25,16 @@ export default function ProfileSetup() {
     e.preventDefault();
     if (!auth.currentUser) return;
     
+    // Show confirmation modal for non-English countries
+    if (isNonEnglishCountry) {
+      setShowConfirmModal(true);
+      return;
+    }
+    
+    await saveProfile();
+  };
+  
+  const saveProfile = async () => {
     setIsSaving(true);
     try {
       // FIXED: Using firestore instead of db
@@ -48,6 +59,11 @@ export default function ProfileSetup() {
       setIsSaving(false);
     }
   };
+  
+  const handleConfirmProceed = async () => {
+    setShowConfirmModal(false);
+    await saveProfile();
+  };
 
   if (isDone) {
     return (
@@ -62,6 +78,80 @@ export default function ProfileSetup() {
   }
 
   return (
+    <>
+    {/* Geographic Limitation Confirmation Modal */}
+    {showConfirmModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4 relative animate-in fade-in zoom-in duration-200">
+          {/* Close button */}
+          <button
+            onClick={() => setShowConfirmModal(false)}
+            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          
+          {/* Warning icon */}
+          <div className="flex justify-center">
+            <div className="bg-amber-100 rounded-full p-3">
+              <AlertTriangle className="w-8 h-8 text-amber-600" />
+            </div>
+          </div>
+          
+          {/* Content */}
+          <div className="text-center space-y-3">
+            <h2 className="text-xl font-bold text-slate-900">
+              Limited Support for {formData.country}
+            </h2>
+            <div className="text-sm text-slate-600 space-y-2 text-left">
+              <p>
+                <strong className="text-slate-900">Important:</strong> CareerPilot AI works best in English-speaking countries (US, UK, Canada, Australia, Ireland, Singapore).
+              </p>
+              <p>
+                In <strong>{formData.country}</strong>, you may experience:
+              </p>
+              <ul className="list-disc list-inside space-y-1 pl-2">
+                <li>Very limited or zero job listings</li>
+                <li>Jobs primarily from English-speaking companies</li>
+                <li>All resumes and cover letters in English only</li>
+              </ul>
+              <p className="text-amber-700 font-medium">
+                We recommend selecting an English-speaking country for the best experience.
+              </p>
+            </div>
+          </div>
+          
+          {/* Action buttons */}
+          <div className="space-y-2 pt-2">
+            <button
+              onClick={() => setShowConfirmModal(false)}
+              className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+            >
+              ← Change Country
+            </button>
+            <button
+              onClick={handleConfirmProceed}
+              disabled={isSaving}
+              className="w-full py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="animate-spin w-4 h-4" />
+                  Saving...
+                </>
+              ) : (
+                'I Understand, Continue Anyway'
+              )}
+            </button>
+          </div>
+          
+          <p className="text-xs text-slate-400 text-center pt-2">
+            You can change your country later in Settings
+          </p>
+        </div>
+      </div>
+    )}
+    
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
       <div className="max-w-md w-full bg-white p-10 rounded-3xl border border-slate-200 shadow-xl space-y-8">
         <div className="text-center">
@@ -169,5 +259,6 @@ export default function ProfileSetup() {
         </form>
       </div>
     </div>
+    </>
   );
 }
