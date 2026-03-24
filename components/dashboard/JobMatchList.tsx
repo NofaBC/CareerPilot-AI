@@ -14,10 +14,13 @@ interface Job {
   remote?: boolean;
   fitScore?: number;
   matchingSkills?: string[];
+  totalSkills?: number;
+  matchingCount?: number;
+  fitExplanation?: string;
   category?: string;
 }
 
-export function JobMatchList({ userId }: { userId: string }) {
+export function JobMatchList({ userId, onJobsLoaded }: { userId: string; onJobsLoaded?: (count: number) => void }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +37,13 @@ export function JobMatchList({ userId }: { userId: string }) {
       });
       if (!response.ok) throw new Error('Failed to fetch jobs');
       const data = await response.json();
-      setJobs(data.jobs || []);
+      const fetchedJobs = data.jobs || [];
+      setJobs(fetchedJobs);
+      
+      // Notify parent component of job count
+      if (onJobsLoaded) {
+        onJobsLoaded(fetchedJobs.length);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -111,13 +120,12 @@ export function JobMatchList({ userId }: { userId: string }) {
               
               <p className="text-slate-300 text-sm line-clamp-2 mb-3">{job.description}</p>
               
-              {job.matchingSkills && job.matchingSkills.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {job.matchingSkills.map((skill, idx) => (
-                    <span key={idx} className="px-2 py-1 bg-emerald-500/10 text-emerald-300 text-xs rounded-full border border-emerald-500/20">
-                      {skill}
-                    </span>
-                  ))}
+              {/* Fit Score Explanation */}
+              {job.fitExplanation && (
+                <div className="mb-2">
+                  <p className="text-xs text-slate-400">
+                    <span className="font-medium text-emerald-400">{job.fitExplanation}:</span> {job.matchingSkills && job.matchingSkills.length > 0 ? job.matchingSkills.join(', ') : 'None'}
+                  </p>
                 </div>
               )}
               

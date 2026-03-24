@@ -19,6 +19,9 @@ interface Job {
   remote?: boolean;
   fitScore?: number;
   matchingSkills?: string[];
+  totalSkills?: number;
+  matchingCount?: number;
+  fitExplanation?: string;
   category?: string;
 }
 
@@ -268,10 +271,11 @@ Applicant`;
                   )}
                 </div>
 
-                {job.matchingSkills && job.matchingSkills.length > 0 && (
+                {/* Fit Score Explanation */}
+                {job.fitExplanation && (
                   <div className="mb-2">
                     <p className="text-xs text-gray-600">
-                      <span className="font-medium">Matching Skills:</span> {job.matchingSkills.join(', ')}
+                      <span className="font-medium text-blue-600">{job.fitExplanation}:</span> {job.matchingSkills && job.matchingSkills.length > 0 ? job.matchingSkills.join(', ') : 'None'}
                     </p>
                   </div>
                 )}

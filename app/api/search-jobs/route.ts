@@ -151,30 +151,44 @@ export async function POST(request: NextRequest) {
         fitScore = 50; // Default if no skills provided
       }
       
-      // Log first job for debugging
-      if (index === 0) {
-        console.log('🔍 Fit Score Debug (First Job):', {
-          jobTitle,
-          userSkills: skills,
-          jobSkills: jobSkills.slice(0, 5),
-          matchingSkills,
-          fitScore,
-          targetRole: profile?.targetRole
-        });
-      }
+      // Log detailed skill matching for all jobs
+      console.log(`🔍 Job ${index + 1}: "${jobTitle}"`, {
+        company: job.employer_name,
+        userSkills: skills,
+        userSkillsCount: skills.length,
+        jobSkills: jobSkills,
+        matchingSkills,
+        matchingCount: matchingSkills.length,
+        baseScore: Math.round((matchingSkills.length / skills.length) * 100),
+        titleMatchBonus: (targetRoleLower && jobTitle.toLowerCase().includes(targetRoleLower)) ? 20 : 0,
+        finalFitScore: fitScore,
+        targetRole: profile?.targetRole
+      });
 
       // Format posted date - use ISO format for international compatibility
-      let postedDate = 'Recent';
+      let postedDate = 'Date not available';
       if (job.job_posted_at_datetime_utc) {
         try {
           const date = new Date(job.job_posted_at_datetime_utc);
           if (!isNaN(date.getTime())) {
-            // Use ISO-like format that's universally understood
+            // Use consistent format for all dates
             const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
-            postedDate = date.toLocaleDateString(undefined, options); // undefined uses user's locale
+            postedDate = date.toLocaleDateString('en-US', options); // Consistent format
           }
         } catch (e) {
-          postedDate = 'Recent';
+          // If date parsing fails, show nothing instead of 'Recent'
+          postedDate = 'Date not available';
+        }
+      } else if (job.job_posted_at_timestamp) {
+        // Fallback: Try timestamp if datetime not available
+        try {
+          const date = new Date(job.job_posted_at_timestamp * 1000);
+          if (!isNaN(date.getTime())) {
+            const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+            postedDate = date.toLocaleDateString('en-US', options);
+          }
+        } catch (e) {
+          postedDate = 'Date not available';
         }
       }
 
@@ -190,6 +204,11 @@ export async function POST(request: NextRequest) {
         salary: job.job_salary?.min ? `${job.job_salary.currency || ''} ${job.job_salary.min.toLocaleString()} - ${job.job_salary.max?.toLocaleString() || ''}`.trim() : 'Not disclosed',
         fitScore,
         matchingSkills: matchingSkills.slice(0, 5),
+        totalSkills: skills.length,
+        matchingCount: matchingSkills.length,
+        fitExplanation: matchingSkills.length > 0 
+          ? `Matched ${matchingSkills.length}/${skills.length} skills`
+          : 'No matching skills found',
         posted: postedDate,
       };
     }).sort((a: any, b: any) => b.fitScore - a.fitScore).slice(0, 10); // Top 10

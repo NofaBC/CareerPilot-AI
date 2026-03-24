@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [applications, setApplications] = useState<any[]>([]);
+  const [matchedJobsCount, setMatchedJobsCount] = useState(0);
   const [stats, setStats] = useState({
     profileComplete: 0,
     jobsQueued: 0,
@@ -67,7 +68,7 @@ export default function Dashboard() {
           const profileCompletion = Math.round((fieldsCompleted / 4) * 100);
           const jobsQueuedCount = 0; // Not tracking queued jobs yet
           const interviewsScheduledCount = applications.filter(app => app.status === 'interview').length;
-          const matchedThisWeekCount = 0; // Not tracking matched jobs yet
+          const matchedThisWeekCount = matchedJobsCount; // Updated from JobMatchList callback
           const applicationsSentCount = applications.length;
           const responsesReceivedCount = applications.filter(app => app.status === 'viewed' || app.status === 'interview').length;
           const interviewsBookedCount = applications.filter(app => app.status === 'interview').length;
@@ -240,7 +241,14 @@ export default function Dashboard() {
 
         {/* Job Matches Section */}
         <section id="job-matches" className="mb-16">
-          <JobMatchList userId={user.uid} />
+          <JobMatchList 
+            userId={user.uid} 
+            onJobsLoaded={(count) => {
+              setMatchedJobsCount(count);
+              // Update stats immediately
+              setStats(prev => ({ ...prev, matchedThisWeek: count }));
+            }}
+          />
         </section>
 
         {/* Applications Section */}
