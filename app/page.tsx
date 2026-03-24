@@ -285,6 +285,126 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Global Availability Section */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-slate-50 mb-4">🌍 Global Job Market Coverage</h2>
+            <p className="text-lg text-slate-300">CareerPilot AI searches jobs worldwide, with the best results in English-speaking markets</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Best Coverage */}
+            <div className="bg-slate-800/50 border border-emerald-500/30 rounded-xl p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">✅</span>
+                </div>
+                <h3 className="text-2xl font-bold text-emerald-400">Best Coverage</h3>
+              </div>
+              <p className="text-slate-300 mb-4">Thousands of jobs available in major English-speaking regions:</p>
+              <ul className="space-y-2 text-slate-300">
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">🇺🇸</span>
+                  <span><strong>United States:</strong> All major cities (NYC, SF, Austin, Seattle, etc.)</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">🇨🇦</span>
+                  <span><strong>Canada:</strong> Toronto, Vancouver, Montreal, Calgary</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">🇬🇧</span>
+                  <span><strong>United Kingdom:</strong> London, Manchester, Edinburgh</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">🇦🇺</span>
+                  <span><strong>Australia:</strong> Sydney, Melbourne, Brisbane</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">🇮🇪</span>
+                  <span><strong>Ireland:</strong> Dublin, Cork</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">🇸🇬</span>
+                  <span><strong>Singapore:</strong> Full coverage</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">🇳🇿</span>
+                  <span><strong>New Zealand:</strong> Auckland, Wellington</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Good Coverage */}
+            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">🌐</span>
+                </div>
+                <h3 className="text-2xl font-bold text-blue-400">Good Coverage</h3>
+              </div>
+              <p className="text-slate-300 mb-4">Growing job listings in European and international markets:</p>
+              <ul className="space-y-2 text-slate-300">
+                <li className="flex items-center gap-2">
+                  <span className="text-blue-400">🇪🇺</span>
+                  <span><strong>Europe:</strong> Germany, France, Netherlands, Sweden, Spain</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-blue-400">🌏</span>
+                  <span><strong>Asia:</strong> India, Hong Kong, UAE (English roles)</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-blue-400">🌎</span>
+                  <span><strong>Latin America:</strong> Brazil, Mexico (English roles)</span>
+                </li>
+              </ul>
+
+              <div className="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                <p className="text-sm text-slate-300">
+                  <strong className="text-blue-400">💡 Pro Tip:</strong> For best results in non-English-speaking countries, 
+                  search in major cities or specify "English" in your target role (e.g., "English-speaking Software Engineer").
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Remote Work Notice */}
+          <div className="mt-8 bg-gradient-to-r from-purple-900/20 to-slate-800/50 border border-purple-500/30 rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-xl">🏠</span>
+              </div>
+              <div>
+                <h4 className="text-xl font-bold text-purple-400 mb-2">Remote & Hybrid Work</h4>
+                <p className="text-slate-300">
+                  CareerPilot AI searches for remote and hybrid positions worldwide. Set your location to "Remote" 
+                  to discover opportunities from companies hiring internationally, regardless of your physical location.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* How Job Search Works */}
+          <div className="mt-8 bg-slate-800/30 border border-slate-700 rounded-xl p-6">
+            <h4 className="text-lg font-bold text-slate-50 mb-3">How Our Global Job Search Works</h4>
+            <div className="grid md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <p className="text-emerald-400 font-semibold mb-1">Real-Time API</p>
+                <p className="text-slate-400">Powered by JSearch API with access to millions of job listings updated daily</p>
+              </div>
+              <div>
+                <p className="text-emerald-400 font-semibold mb-1">AI Matching</p>
+                <p className="text-slate-400">Our GPT-4o algorithm analyzes your skills against job requirements for fit scores</p>
+              </div>
+              <div>
+                <p className="text-emerald-400 font-semibold mb-1">Fresh Results</p>
+                <p className="text-slate-400">New jobs added continuously - search anytime for the latest opportunities</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-16">
         <div className="bg-gradient-to-r from-emerald-900/50 to-slate-800/50 border border-emerald-500/50 rounded-2xl p-12 text-center max-w-4xl mx-auto">
