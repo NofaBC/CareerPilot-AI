@@ -11,12 +11,12 @@ export default function Home() {
           </h1>
           <p className="text-2xl text-emerald-400 font-semibold">Autonomous Job Hunt Agent</p>
           <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-            AI-powered job search platform that finds positions, matches your skills, generates resumes, 
+            AI-powered job search platform that finds positions, matches your skills, builds resumes, 
             and creates personalized cover letters in seconds.
           </p>
           <p className="text-sm text-slate-400 flex items-center justify-center gap-2">
             <span className="inline-block">🌍</span>
-            Available globally - US, UK, Canada, Australia, Europe & more
+            Best coverage in English-speaking markets, with growing support worldwide
           </p>
           <div className="flex gap-4 justify-center pt-4">
             <Link 
@@ -409,7 +409,7 @@ export default function Home() {
       <section className="container mx-auto px-4 py-16">
         <div className="bg-gradient-to-r from-emerald-900/50 to-slate-800/50 border border-emerald-500/50 rounded-2xl p-12 text-center max-w-4xl mx-auto">
           <h2 className="text-4xl font-bold text-slate-50 mb-4">Ready to Transform Your Job Search?</h2>
-          <p className="text-xl text-slate-300 mb-8">Join thousands of professionals using CareerPilot AI to land their dream jobs faster.</p>
+          <p className="text-xl text-slate-300 mb-8">Start your AI-powered job search today and accelerate your path to landing your dream job.</p>
           <div className="flex gap-4 justify-center">
             <Link 
               href="/signup" 
