@@ -4,14 +4,31 @@ import { db } from '@/lib/firebase-admin';
 // Helper function to check for common skill variations
 function checkSkillVariations(skill: string, jobText: string): boolean {
   const variations: Record<string, string[]> = {
+    // Hospitality & Customer Service
     'hospitality': ['hotel', 'guest service', 'front desk', 'concierge'],
     'customer service': ['guest service', 'client service', 'customer care', 'customer support'],
     'reception': ['receptionist', 'front desk', 'front office'],
+    
+    // Management & Leadership
     'management': ['manager', 'lead', 'supervisor', 'director'],
+    'leadership': ['team lead', 'supervisor', 'manager'],
+    'staff coordination': ['team coordination', 'staff management', 'staff supervision'],
+    
+    // General Skills
     'communication': ['interpersonal', 'verbal', 'written'],
     'organization': ['organizational', 'scheduling', 'planning'],
     'microsoft office': ['ms office', 'word', 'excel', 'powerpoint'],
-    'leadership': ['team lead', 'supervisor', 'manager'],
+    
+    // Healthcare & Nursing
+    'patient care': ['bedside care', 'clinical care', 'patient safety', 'direct patient care'],
+    'nursing': ['rn', 'registered nurse', 'nurse', 'clinical nursing'],
+    'quality improvement': ['quality assurance', 'qa', 'process improvement', 'continuous improvement'],
+    'emr': ['electronic medical records', 'ehr', 'electronic health records', 'medical records'],
+    'acute care': ['critical care', 'icu', 'intensive care'],
+    'care planning': ['care coordination', 'treatment planning', 'patient planning'],
+    'shift management': ['shift coordination', 'shift scheduling', 'shift supervision'],
+    'medical surgical': ['med surg', 'medical-surgical', 'medsurg'],
+    'rehabilitation': ['rehab', 'physical therapy', 'occupational therapy'],
   };
   
   // Check if skill has variations and if any appear in job text

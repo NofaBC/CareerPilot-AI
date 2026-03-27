@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { auth, firestore } from '../../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { Loader2, ArrowLeft, Info, AlertTriangle, X } from 'lucide-react';
+import { Loader2, ArrowLeft, Info, AlertTriangle, X, Sparkles } from 'lucide-react';
 
 export default function EditProfile() {
   const [formData, setFormData] = useState({ targetRole: '', location: '', country: '', experienceYears: '', skills: '' });
@@ -11,6 +11,7 @@ export default function EditProfile() {
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [originalCountry, setOriginalCountry] = useState('');
+  const [isExtractingSkills, setIsExtractingSkills] = useState(false);
   
   // English-speaking countries for better job search results
   const englishSpeakingCountries = ['United States', 'United Kingdom', 'Canada', 'Australia', 'Ireland', 'Singapore'];
@@ -76,6 +77,46 @@ export default function EditProfile() {
     setShowConfirmModal(false);
     await saveProfile();
   };
+  
+  const handleExtractSkills = async () => {
+    if (!formData.skills || formData.skills.trim().length === 0) {
+      alert('Please enter some text describing your skills first');
+      return;
+    }
+    
+    setIsExtractingSkills(true);
+    try {
+      const response = await fetch('/api/extract-skills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: formData.skills })
+      });
+      
+      const data = await response.json();
+      
+      if (data.skills && data.skills.length > 0) {
+        setFormData({ ...formData, skills: data.skills.join(', ') });
+      } else {
+        alert('Could not extract skills. Please enter skills manually.');
+      }
+    } catch (error) {
+      console.error('Skill extraction error:', error);
+      alert('Failed to extract skills. Please try again.');
+    } finally {
+      setIsExtractingSkills(false);
+    }
+  };
+  
+  // Parse and preview skills
+  const parseSkills = (skillsText: string): string[] => {
+    return skillsText
+      .split(/[,•]/)  
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && s.length < 100);
+  };
+  
+  const skillsParsed = parseSkills(formData.skills);
+  const isParagraphFormat = formData.skills.length > 100 && skillsParsed.length < 3;
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin w-10 h-10 text-blue-600" /></div>;
 
@@ -218,7 +259,71 @@ export default function EditProfile() {
           
           <div className="space-y-2">
             <label className="text-sm font-bold text-slate-700">Key Skills</label>
-            <textarea placeholder="Skills (comma separated)" rows={3} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl resize-none" value={formData.skills} onChange={(e) => setFormData({...formData, skills: e.target.value})} required />
+            <textarea 
+              placeholder="e.g., Patient Care, Staff Coordination, Quality Improvement, EMR Systems" 
+              rows={4} 
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl resize-none" 
+              value={formData.skills} 
+              onChange={(e) => setFormData({...formData, skills: e.target.value})} 
+              required 
+            />
+            
+            {/* Helper text and examples */}
+            <div className="text-xs text-slate-500 space-y-1">
+              <p>💡 <strong>Tip:</strong> List specific skills separated by commas</p>
+              <p className="pl-5">Examples: JavaScript, React, Node.js, AWS • Nursing, Patient Care, EMR • Excel, Data Analysis</p>
+            </div>
+            
+            {/* Paragraph format warning + AI extract button */}
+            {isParagraphFormat && (
+              <div className="mt-2 bg-blue-50 border border-blue-200 rounded-xl p-3">
+                <div className="flex items-start gap-2">
+                  <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-xs text-blue-800 mb-2">
+                      <strong>Detected paragraph format.</strong> For best job matching results, use comma-separated skills instead.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleExtractSkills}
+                      disabled={isExtractingSkills}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isExtractingSkills ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          Extracting...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3 h-3" />
+                          Extract Skills with AI
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Real-time skill preview badges */}
+            {skillsParsed.length > 0 && !isParagraphFormat && (
+              <div className="mt-2">
+                <p className="text-xs font-semibold text-slate-600 mb-1.5">Preview ({skillsParsed.length} skills):</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {skillsParsed.slice(0, 10).map((skill, idx) => (
+                    <span key={idx} className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full font-medium">
+                      {skill}
+                    </span>
+                  ))}
+                  {skillsParsed.length > 10 && (
+                    <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full font-medium">
+                      +{skillsParsed.length - 10} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           
           <button type="submit" disabled={isSaving} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold">{isSaving ? "Saving..." : "Save Changes"}</button>
