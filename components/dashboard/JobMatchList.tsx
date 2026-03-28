@@ -24,11 +24,13 @@ export function JobMatchList({ userId, onJobsLoaded }: { userId: string; onJobsL
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [noResultsMessage, setNoResultsMessage] = useState<string | null>(null);
 
   const fetchJobs = async () => {
     if (!userId) return;
     setLoading(true);
     setError(null);
+    setNoResultsMessage(null);
     try {
       const response = await fetch('/api/search-jobs', {
         method: 'POST',
@@ -39,6 +41,11 @@ export function JobMatchList({ userId, onJobsLoaded }: { userId: string; onJobsL
       const data = await response.json();
       const fetchedJobs = data.jobs || [];
       setJobs(fetchedJobs);
+      
+      // Store helpful message if no jobs found
+      if (fetchedJobs.length === 0 && data.message) {
+        setNoResultsMessage(data.message);
+      }
       
       // Notify parent component of job count
       if (onJobsLoaded) {
@@ -88,8 +95,13 @@ export function JobMatchList({ userId, onJobsLoaded }: { userId: string; onJobsL
       )}
       
       {!loading && !error && jobs.length === 0 && (
-        <div className="text-xs text-slate-100 text-center py-4">
-          No jobs found. Try updating your profile.
+        <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
+          <p className="text-sm text-slate-300 mb-2">
+            {noResultsMessage || 'No jobs found. Try updating your profile or changing your target role.'}
+          </p>
+          <p className="text-xs text-slate-400">
+            💡 <strong>Tip:</strong> Try using a simpler job title (e.g., "Plumber" instead of "Master Plumber") or a different location.
+          </p>
         </div>
       )}
       

@@ -29,6 +29,18 @@ function checkSkillVariations(skill: string, jobText: string): boolean {
     'shift management': ['shift coordination', 'shift scheduling', 'shift supervision'],
     'medical surgical': ['med surg', 'medical-surgical', 'medsurg'],
     'rehabilitation': ['rehab', 'physical therapy', 'occupational therapy'],
+    
+    // Trade Skills - Plumbing
+    'plumbing': ['plumber', 'pipe', 'piping'],
+    'pipe installation': ['piping', 'pipe fitting', 'pipefitter'],
+    'plumbing repair': ['plumbing maintenance', 'pipe repair', 'fixture repair'],
+    'water heater': ['water heater installation', 'tankless', 'boiler'],
+    'drain systems': ['drainage', 'sewer', 'waste systems'],
+    'gas piping': ['gas line', 'gas fitting', 'natural gas'],
+    'leak detection': ['leak repair', 'water leak', 'pipe leak'],
+    'fixture installation': ['plumbing fixtures', 'sink', 'toilet', 'faucet'],
+    'code compliance': ['building codes', 'plumbing codes', 'compliance'],
+    'blueprint reading': ['blueprints', 'technical drawings', 'plans'],
   };
   
   // Check if skill has variations and if any appear in job text
@@ -119,6 +131,12 @@ export async function POST(request: NextRequest) {
         country: profile?.country,
         city: profile?.location,
         targetRole: profile?.targetRole
+      });
+      
+      // Return helpful message to user
+      return NextResponse.json({ 
+        jobs: [],
+        message: `No jobs found for "${profile?.targetRole}" in ${profile?.location}. This could mean: (1) JSearch API has limited coverage for this role/location, (2) Try a broader search term (e.g., "Plumber" instead of "Master Plumber"), or (3) Check back later as new jobs are added daily.`
       });
     }
 
