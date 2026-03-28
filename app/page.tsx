@@ -11,8 +11,8 @@ export default function Home() {
           </h1>
           <p className="text-2xl text-emerald-400 font-semibold">Autonomous Job Hunt Agent</p>
           <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-            AI-powered job search platform that finds positions, matches your skills, builds resumes, 
-            and creates personalized cover letters in seconds.
+            AI-powered job search platform specialized in Tech, Business, Healthcare, and Professional roles. 
+            Find positions, match your skills, build resumes, and create personalized cover letters in seconds.
           </p>
           <p className="text-sm text-slate-400 flex items-center justify-center gap-2">
             <span className="inline-block">🌍</span>
@@ -224,6 +224,97 @@ export default function Home() {
             </div>
             <div className="bg-slate-800/50 border border-slate-700 rounded-lg px-6 py-3">
               <div className="text-slate-300">Large Pack: <span className="text-emerald-400 font-semibold">1,500 credits - $90</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Job Coverage by Industry */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-slate-50 mb-4">💼 Job Coverage by Industry</h2>
+            <p className="text-lg text-slate-300">Our job database specializes in certain industries with comprehensive coverage</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Strong Coverage */}
+            <div className="bg-gradient-to-br from-emerald-900/30 to-slate-800/50 border border-emerald-500/50 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">✅</span>
+                </div>
+                <h3 className="text-xl font-bold text-emerald-400">Excellent Coverage</h3>
+              </div>
+              <p className="text-sm text-slate-300 mb-4">Thousands of active listings updated daily:</p>
+              <ul className="space-y-2 text-sm text-slate-300">
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">💻</span>
+                  <span><strong>Technology:</strong> Software Engineering, DevOps, Data Science, QA, Product</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">💼</span>
+                  <span><strong>Business:</strong> Marketing, Sales, HR, Project Management, Operations</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">🏥</span>
+                  <span><strong>Healthcare:</strong> Nursing, Medical, Therapy, Clinical, Healthcare Admin</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">💰</span>
+                  <span><strong>Finance:</strong> Accounting, Financial Analysis, Banking, Investment</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">🎓</span>
+                  <span><strong>Education:</strong> Teaching, Training, Academic, Instructional Design</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">🎨</span>
+                  <span><strong>Creative:</strong> Design, UX/UI, Content, Media, Communications</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Limited Coverage */}
+            <div className="bg-slate-800/50 border border-slate-600 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-amber-500/20 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">⚠️</span>
+                </div>
+                <h3 className="text-xl font-bold text-amber-400">Limited Coverage</h3>
+              </div>
+              <p className="text-sm text-slate-300 mb-4">Fewer listings available - consider alternative platforms for:</p>
+              <ul className="space-y-2 text-sm text-slate-400">
+                <li className="flex items-center gap-2">
+                  <span className="text-amber-400">🔧</span>
+                  <span><strong>Skilled Trades:</strong> Plumbing, Electrical, HVAC, Carpentry, Welding</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-amber-400">🏗️</span>
+                  <span><strong>Construction:</strong> General Labor, Heavy Equipment, Site Management</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-amber-400">🏭</span>
+                  <span><strong>Manufacturing:</strong> Production, Assembly, Quality Control, Machining</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-amber-400">🚛</span>
+                  <span><strong>Transportation:</strong> Trucking, Delivery, Logistics (Driver roles)</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-amber-400">🍳</span>
+                  <span><strong>Food Service:</strong> Cooking, Restaurant Staff, Catering</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-amber-400">💈</span>
+                  <span><strong>Personal Services:</strong> Cosmetology, Salon, Spa, Barbering</span>
+                </li>
+              </ul>
+              <div className="mt-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700">
+                <p className="text-xs text-slate-400">
+                  <strong className="text-amber-400">Note:</strong> We're working to expand coverage in these industries. For now, we recommend using industry-specific job boards alongside CareerPilot AI.
+                </p>
+              </div>
             </div>
           </div>
         </div>
