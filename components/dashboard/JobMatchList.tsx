@@ -32,13 +32,19 @@ export function JobMatchList({ userId, onJobsLoaded }: { userId: string; onJobsL
     setError(null);
     setNoResultsMessage(null);
     try {
+      console.log('Fetching jobs for userId:', userId);
       const response = await fetch('/api/search-jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
       });
-      if (!response.ok) throw new Error('Failed to fetch jobs');
+      
       const data = await response.json();
+      console.log('API response:', data);
+      
+      if (!response.ok) {
+        throw new Error(data.error || data.details || 'Failed to fetch jobs');
+      }
       const fetchedJobs = data.jobs || [];
       setJobs(fetchedJobs);
       
