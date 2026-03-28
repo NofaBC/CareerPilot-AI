@@ -179,13 +179,13 @@ export async function POST(request: NextRequest) {
       });
       
       // Calculate fit score based on matching skills
+      const targetRoleLower = profile?.targetRole?.toLowerCase() || '';
       let fitScore = 0;
       if (skills.length > 0) {
         // Base score from skill matches
         fitScore = Math.round((matchingSkills.length / skills.length) * 100);
         
         // Bonus points for job title match with user's target role
-        const targetRoleLower = profile?.targetRole?.toLowerCase() || '';
         if (targetRoleLower && jobTitle.toLowerCase().includes(targetRoleLower)) {
           fitScore = Math.min(100, fitScore + 20);
         }
