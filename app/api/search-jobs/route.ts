@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 
+// JSearch API integration for job search
+
 // Helper function to check for common skill variations
 function checkSkillVariations(skill: string, jobText: string): boolean {
   const variations: Record<string, string[]> = {
