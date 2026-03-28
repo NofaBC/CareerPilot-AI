@@ -111,8 +111,13 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ JSearch API error:', response.status, errorText);
+      console.error('API Key exists:', !!process.env.JSEARCH_API_KEY);
+      console.error('API Key length:', process.env.JSEARCH_API_KEY?.length);
+      
       return NextResponse.json({ 
         error: `Job search failed: ${response.status}`,
+        details: errorText,
+        apiKeyConfigured: !!process.env.JSEARCH_API_KEY,
         jobs: [] 
       }, { status: 500 });
     }
@@ -253,10 +258,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ jobs: scoredJobs });
   } catch (error: any) {
     console.error('❌ /api/search-jobs error:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
     return NextResponse.json({ 
       error: 'Internal server error',
       details: error.message,
-      stack: error.stack 
+      errorName: error.name,
+      hint: 'Check Vercel logs for detailed error information'
     }, { status: 500 });
   }
 }
