@@ -41,6 +41,7 @@ export function JobMatchList({ userId, onJobsLoaded }: { userId: string; onJobsL
       
       const data = await response.json();
       console.log('API response:', data);
+      console.log('API response JSON:', JSON.stringify(data, null, 2));
       
       if (!response.ok) {
         throw new Error(data.error || data.details || 'Failed to fetch jobs');
