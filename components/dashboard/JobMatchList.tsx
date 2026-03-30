@@ -115,7 +115,27 @@ export function JobMatchList({ userId, onJobsLoaded }: { userId: string; onJobsL
       )}
       
       {!loading && !error && jobs.length > 0 && (
-        <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+        <>
+          {/* Resume Reminder Banner */}
+          <div className="bg-blue-900/20 border border-blue-500/30 rounded-xl p-4 mb-3">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl">📄</div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-blue-300 mb-1">Ready to Apply?</h3>
+                <p className="text-xs text-slate-300 mb-2">
+                  Build or update your resume first for best results with Smart Apply. Your resume will be used to generate tailored cover letters.
+                </p>
+                <button
+                  onClick={() => window.location.href = '/dashboard/resume-builder'}
+                  className="text-xs font-semibold text-blue-400 hover:text-blue-300 underline"
+                >
+                  → Build Resume Now
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
           {jobs.map((job) => (
             <motion.div 
               key={job.id} 
@@ -152,20 +172,36 @@ export function JobMatchList({ userId, onJobsLoaded }: { userId: string; onJobsL
               
               <div className="flex justify-between items-center">
                 <span className="text-xs text-slate-500">{job.posted || 'Recently'}</span>
-                {job.applyLink && (
-                  <a 
-                    href={job.applyLink} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-3 py-1 bg-emerald-500/20 text-emerald-300 text-sm rounded-lg hover:bg-emerald-500/30 transition-colors"
+                <div className="flex gap-2">
+                  {/* Smart Apply Button - Redirects to resume builder if no resume */}
+                  <button
+                    onClick={() => {
+                      // TODO: Check if user has resume, if not redirect to resume builder
+                      window.location.href = '/dashboard/resume-builder?returnTo=smart-apply&jobId=' + job.id;
+                    }}
+                    className="inline-flex items-center px-3 py-1 bg-blue-500/20 text-blue-300 text-sm rounded-lg hover:bg-blue-500/30 transition-colors font-medium"
+                    title="Build/update your resume and generate a tailored cover letter"
                   >
-                    Apply Now <ExternalLink className="w-3 h-3 ml-1" />
-                  </a>
-                )}
+                    ✨ Smart Apply
+                  </button>
+                  
+                  {/* External Apply Link */}
+                  {job.applyLink && (
+                    <a 
+                      href={job.applyLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-3 py-1 bg-emerald-500/20 text-emerald-300 text-sm rounded-lg hover:bg-emerald-500/30 transition-colors"
+                    >
+                      Apply Now <ExternalLink className="w-3 h-3 ml-1" />
+                    </a>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
