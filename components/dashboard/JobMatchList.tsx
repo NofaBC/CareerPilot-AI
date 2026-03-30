@@ -73,9 +73,11 @@ export function JobMatchList({ userId, onJobsLoaded }: { userId: string; onJobsL
     <div className="rounded-2xl border border-slate-700 bg-slate-800/80 p-4 sm:p-5 space-y-3 mb-16">
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold text-slate-50 flex items-center gap-2">
-          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-xs font-bold">
-            2
-          </span>
+          {jobs.length > 0 && (
+            <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-xs font-bold">
+              {jobs.length}
+            </span>
+          )}
           JobMatch Engine™
         </h2>
         <button 

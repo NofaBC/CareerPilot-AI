@@ -218,6 +218,11 @@ Applicant`;
         <h3 className="text-lg font-semibold text-gray-900 flex items-center">
           <FiBriefcase className="w-5 h-5 mr-2 text-blue-600" />
           AI Job Matches
+          {jobs.length > 0 && (
+            <span className="ml-2 inline-flex items-center justify-center min-w-6 h-6 px-2 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
+              {jobs.length}
+            </span>
+          )}
         </h3>
         <button 
           onClick={searchJobs}
