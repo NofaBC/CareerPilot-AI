@@ -43,6 +43,18 @@ function checkSkillVariations(skill: string, jobText: string): boolean {
     'fixture installation': ['plumbing fixtures', 'sink', 'toilet', 'faucet'],
     'code compliance': ['building codes', 'plumbing codes', 'compliance'],
     'blueprint reading': ['blueprints', 'technical drawings', 'plans'],
+    
+    // Marketing & Digital Marketing
+    'digital marketing': ['online marketing', 'internet marketing', 'web marketing'],
+    'content marketing': ['content strategy', 'content creation', 'copywriting'],
+    'seo': ['search engine optimization', 'organic search', 'google ranking'],
+    'sem': ['search engine marketing', 'paid search', 'ppc'],
+    'social media': ['social media marketing', 'smm', 'social channels'],
+    'email marketing': ['email campaigns', 'email automation', 'newsletters'],
+    'analytics': ['google analytics', 'data analysis', 'metrics'],
+    'campaign management': ['marketing campaigns', 'campaign strategy', 'campaign execution'],
+    'brand strategy': ['branding', 'brand development', 'brand management'],
+    'marketing automation': ['marketing tech', 'martech', 'automation tools'],
   };
   
   // Check if skill has variations and if any appear in job text
@@ -241,7 +253,7 @@ export async function POST(request: NextRequest) {
         location: job.job_city 
           ? `${job.job_city}${job.job_state ? ', ' + job.job_state : ''}`
           : 'Remote',
-        description: job.job_description?.slice(0, 300) + '...',
+        description: job.job_description ? job.job_description.slice(0, 300) + '...' : 'No description available',
         applyLink: job.job_apply_link,
         salary: job.job_salary?.min ? `${job.job_salary.currency || ''} ${job.job_salary.min.toLocaleString()} - ${job.job_salary.max?.toLocaleString() || ''}`.trim() : 'Not disclosed',
         fitScore,
