@@ -519,7 +519,7 @@ export default function Home() {
           <p>© 2026 CareerPilot AI™ - Part of NOFA AI Factory</p>
           <p className="mt-2">Powered by OpenAI GPT-4o • Available in US, UK, Canada, Australia, Europe & more</p>
           <p className="mt-2">
-            Need help? Contact us: <a href="mailto:supportdesk@nofabusinessconsulting.com" className="text-emerald-400 hover:text-emerald-300 underline">supportdesk@nofabusinessconsulting.com</a>
+            Need help? Contact us: <a href="mailto:supportdesk@nofabusinessconsulting.com" className="text-emerald-400 hover:text-emerald-300 underline decoration-2 underline-offset-2 font-medium transition-colors">supportdesk@nofabusinessconsulting.com</a>
           </p>
         </div>
       </footer>
