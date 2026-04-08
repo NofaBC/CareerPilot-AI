@@ -43,7 +43,7 @@ export const SUBSCRIPTION_TIERS = {
     interval: 'month',
     description: 'For active job seekers',
     resetPolicy: 'Credits reset monthly (no rollover)',
-    stripePriceId: '', // To be filled after Stripe product creation
+    stripePriceId: 'price_1TJxRyAhdh05oATtfUQ6ry9I',
     features: [
       '500 credits per month',
       '~62 job searches',
@@ -64,7 +64,7 @@ export const SUBSCRIPTION_TIERS = {
     interval: 'month',
     description: 'For power users',
     resetPolicy: 'Credits reset monthly (no rollover)',
-    stripePriceId: '', // To be filled after Stripe product creation
+    stripePriceId: 'price_1TJxUVAhdh05oATtR2Z42Rl5',
     badge: 'MOST POPULAR',
     features: [
       '1,200 credits per month',
@@ -88,7 +88,7 @@ export const CREDIT_TOPUPS = {
     name: 'Small Pack',
     price: 15,
     credits: 200,
-    stripePriceId: '', // To be filled after Stripe product creation
+    stripePriceId: 'price_1TJxXDAhdh05oATtE8T7ZXPn',
     bestFor: 'Quick top-up when you run low',
     pricePerCredit: 0.075,
   },
@@ -97,7 +97,7 @@ export const CREDIT_TOPUPS = {
     name: 'Medium Pack',
     price: 40,
     credits: 600,
-    stripePriceId: '', // To be filled after Stripe product creation
+    stripePriceId: 'price_1TJxZOAhdh05oATtN6cm5TcQ',
     bestFor: 'Extra credits for a heavy search month',
     pricePerCredit: 0.067,
     savings: '11% better than Small',
@@ -107,7 +107,7 @@ export const CREDIT_TOPUPS = {
     name: 'Large Pack',
     price: 90,
     credits: 1500,
-    stripePriceId: '', // To be filled after Stripe product creation
+    stripePriceId: 'price_1TJxbKAhdh05oATtq5X2SShI',
     bestFor: 'Best value - credits never expire',
     pricePerCredit: 0.06,
     savings: '20% better than Small',
