@@ -48,6 +48,11 @@ export default function ProfileSetup() {
           .split(/[,•]/)  // Split by comma OR bullet point
           .map(s => s.trim())
           .filter(s => s.length > 0),  // Remove empty strings
+        // Initialize free tier credits
+        subscription: 'free',
+        credits: 40,
+        lifetimeCredits: 0,
+        creditsRefillDate: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
       setIsDone(true);
