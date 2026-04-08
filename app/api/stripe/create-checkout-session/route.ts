@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { adminAuth, adminDb } from '@/lib/firebaseAdmin';
+import { auth, db } from '@/lib/firebase-admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia',
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await adminAuth.verifyIdToken(token);
+    const decodedToken = await auth.verifyIdToken(token);
     const userId = decodedToken.uid;
 
     const body = await req.json();
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get user data to check for existing Stripe customer
-    const userRef = adminDb.collection('users').doc(userId);
+    const userRef = db.collection('users').doc(userId);
     const userDoc = await userRef.get();
     const userData = userDoc.data();
 

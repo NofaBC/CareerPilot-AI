@@ -1,5 +1,6 @@
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 
 const serviceAccount = {
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -16,5 +17,6 @@ if (!getApps().length) {
 }
 
 const db = getFirestore();
+const auth = getAuth();
 
-export { db };
+export { db, auth };

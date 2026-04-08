@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { adminDb } from '@/lib/firebaseAdmin';
+import { db } from '@/lib/firebase-admin';
 import { SUBSCRIPTION_TIERS, CREDIT_TOPUPS } from '@/lib/credits';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -89,7 +89,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     const subscriptionId = session.subscription as string;
     const customerId = session.customer as string;
 
-    const userRef = adminDb.collection('users').doc(userId);
+    const userRef = db.collection('users').doc(userId);
     await userRef.update({
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscriptionId,
@@ -119,7 +119,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       return;
     }
 
-    const userRef = adminDb.collection('users').doc(userId);
+    const userRef = db.collection('users').doc(userId);
     const userDoc = await userRef.get();
     const userData = userDoc.data();
 
@@ -142,7 +142,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   const userId = subscription.metadata?.userId;
   if (!userId) {
     // Try to find user by stripeSubscriptionId
-    const usersSnapshot = await adminDb
+    const usersSnapshot = await db
       .collection('users')
       .where('stripeSubscriptionId', '==', subscription.id)
       .limit(1)
@@ -176,7 +176,7 @@ async function updateUserSubscription(userId: string, subscription: Stripe.Subsc
     }
   }
 
-  const userRef = adminDb.collection('users').doc(userId);
+  const userRef = db.collection('users').doc(userId);
   const userDoc = await userRef.get();
   const userData = userDoc.data();
 
@@ -199,7 +199,7 @@ async function updateUserSubscription(userId: string, subscription: Stripe.Subsc
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   console.log('Subscription deleted:', subscription.id);
 
-  const usersSnapshot = await adminDb
+  const usersSnapshot = await db
     .collection('users')
     .where('stripeSubscriptionId', '==', subscription.id)
     .limit(1)
@@ -248,7 +248,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     return;
   }
 
-  const usersSnapshot = await adminDb
+  const usersSnapshot = await db
     .collection('users')
     .where('stripeSubscriptionId', '==', subscriptionId)
     .limit(1)
