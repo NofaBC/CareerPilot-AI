@@ -8,7 +8,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import {
   Briefcase, Target, Send, Mic2, ChevronRight, LayoutDashboard,
   User, Search, FileText, Star, Settings, LogOut, BarChart3,
-  Calendar, MapPin, ExternalLink, File
+  Calendar, MapPin, ExternalLink, File, CreditCard, Zap, ArrowUpRight
 } from 'lucide-react';
 import { JobMatchList } from '../../components/dashboard/JobMatchList';
 
@@ -147,7 +147,41 @@ export default function Dashboard() {
           ))}
         </nav>
 
-        <div className="pt-8 border-t border-white/5 space-y-2">
+        {/* Credit Balance Widget */}
+        <div className="pt-6 space-y-3">
+          <div className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 backdrop-blur-md p-5 rounded-2xl border border-blue-500/20">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-yellow-400" />
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Credits</span>
+              </div>
+              <span className="text-2xl font-black text-white">{profile?.credits || 0}</span>
+            </div>
+            <div className="text-xs text-slate-400 mb-3">
+              <span className="font-semibold text-blue-400">{profile?.subscription?.charAt(0).toUpperCase() + profile?.subscription?.slice(1) || 'Free'}</span> Plan
+            </div>
+            {profile?.subscription === 'free' && (
+              <button 
+                onClick={() => window.location.href = '/pricing'}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                <ArrowUpRight className="w-4 h-4" />
+                Upgrade Plan
+              </button>
+            )}
+            {profile?.subscription !== 'free' && (
+              <button 
+                onClick={() => window.location.href = '/pricing'}
+                className="w-full bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 text-sm font-bold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                <CreditCard className="w-4 h-4" />
+                Buy Credits
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-white/5 space-y-2">
           <button onClick={() => auth.signOut().then(() => window.location.href = '/')} className="w-full flex items-center gap-4 p-4 text-rose-500/70 hover:bg-rose-500/10 rounded-2xl font-bold transition-all"><LogOut className="w-5 h-5" /> Logout</button>
         </div>
       </aside>
