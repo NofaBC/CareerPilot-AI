@@ -186,7 +186,7 @@ export default function PricingPage() {
         <div>
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-white mb-2">Credit Top-Ups</h2>
-            <p className="text-slate-400">Need more credits? Purchase one-time top-ups that never expire.</p>
+            <p className="text-slate-400">Need more credits? Purchase one-time top-ups (no monthly reset).</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {/* Small Pack */}
