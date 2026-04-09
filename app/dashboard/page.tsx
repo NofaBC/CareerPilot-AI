@@ -160,16 +160,20 @@ export default function Dashboard() {
             <div className="text-xs text-slate-400 mb-3">
               <span className="font-semibold text-blue-400">{profile?.subscription?.charAt(0).toUpperCase() + profile?.subscription?.slice(1) || 'Free'}</span> Plan
             </div>
-            {profile?.subscription === 'free' && (
-              <button 
-                onClick={() => window.location.href = '/pricing'}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2"
-              >
-                <ArrowUpRight className="w-4 h-4" />
-                Upgrade Plan
-              </button>
-            )}
-            {profile?.subscription !== 'free' && (
+            {profile?.subscription === 'free' ? (
+              <>
+                <p className="text-xs text-slate-400 mb-3 leading-relaxed">
+                  You are currently using our Free Plan. To unlock more features and usage, choose a subscription plan.
+                </p>
+                <button 
+                  onClick={() => window.location.href = '/pricing'}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2"
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                  View Plans
+                </button>
+              </>
+            ) : (
               <button 
                 onClick={() => window.location.href = '/pricing'}
                 className="w-full bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 text-sm font-bold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2"
