@@ -317,6 +317,21 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          {/* Resume Builder Note */}
+          <div className="mt-8 bg-blue-900/20 border border-blue-500/30 rounded-xl p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-2xl">📝</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-blue-400 mb-2">Resume Builder Note</h3>
+                <p className="text-sm text-slate-300">
+                  CareerPilot AI can support users in other English-speaking countries. Users may also upload their own resume, while the built-in resume builder is currently optimized for U.S.-style resumes.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
