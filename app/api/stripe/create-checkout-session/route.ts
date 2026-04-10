@@ -44,10 +44,12 @@ export async function POST(req: NextRequest) {
       });
       customerId = customer.id;
 
-      await userRef.update({
+      // Use set with merge to handle users without existing Firestore document
+      await userRef.set({
         stripeCustomerId: customerId,
+        email: decodedToken.email,
         updatedAt: new Date().toISOString(),
-      });
+      }, { merge: true });
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://career-pilot-ai-gamma.vercel.app';
